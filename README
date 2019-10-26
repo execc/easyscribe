@@ -6,7 +6,6 @@
   Build for production: cd client && npm run build
 
 
-
   Deploying 'SimpleStorage'
    -------------------------
    > transaction hash:    0xd9e47a177834825e0184604f7aa563add9a9e7802f5f6c151056230325b6b420
@@ -22,4 +21,12 @@
    > total cost:          0.00188502 ETH
 
 
-   0xc4375b7de8af5a38a93548eb8453a498222c4ff2
+   DAI Address: 0xc4375b7de8af5a38a93548eb8453a498222c4ff2
+
+   Create:
+   "0xc4375b7de8af5a38a93548eb8453a498222c4ff2", "0x8D933D915Ae4f74D1b5BA32466c5676F2E15E5A1", 60, 1000000000000
+   
+
+   npx truffle migrate --network kovan
+
+   
