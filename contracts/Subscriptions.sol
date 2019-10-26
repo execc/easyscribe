@@ -212,6 +212,10 @@ contract Subscriptions {
     ) {
         bytes32 id = clients[_client][_index];
         Subscription memory subscription = subscriptions[id];
+        uint256 amount = 0;
+        if (!subscription.canceled) {
+            amount = getSubscriptionAmount(id);
+        }
         return (
             id,
             subscription.client,
@@ -221,7 +225,7 @@ contract Subscriptions {
             subscription.tokens_per_time_unit,
             subscription.last_payment_at,
             subscription.canceled,
-            getSubscriptionAmount(id)
+            amount
         );
     }
     
@@ -248,6 +252,10 @@ contract Subscriptions {
     ) {
         bytes32 id = providers[_provider][_index];
         Subscription memory subscription = subscriptions[id];
+        uint256 amount = 0;
+        if (!subscription.canceled) {
+            amount = getSubscriptionAmount(id);
+        }
         return (
             id,
             subscription.client,
@@ -257,7 +265,7 @@ contract Subscriptions {
             subscription.tokens_per_time_unit,
             subscription.last_payment_at,
             subscription.canceled,
-            getSubscriptionAmount(id)
+            amount
         );
     }
 }
