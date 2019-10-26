@@ -4,3 +4,19 @@
   Test dapp:            cd client && npm test
   Run dev server:       cd client && npm run start
   Build for production: cd client && npm run build
+
+
+
+  Deploying 'SimpleStorage'
+   -------------------------
+   > transaction hash:    0xd9e47a177834825e0184604f7aa563add9a9e7802f5f6c151056230325b6b420
+   > Blocks: 2            Seconds: 4
+   > contract address:    0xC7a1453e83c961b4A52642B7DDC3055157A96A57
+   > block number:        14390003
+   > block timestamp:     1572082568
+   > account:             0x7dB647031EE753604CC3aE49592de4C09818f23b
+   > balance:             0.99280162
+   > gas used:            94251
+   > gas price:           20 gwei
+   > value sent:          0 ETH
+   > total cost:          0.00188502 ETH
