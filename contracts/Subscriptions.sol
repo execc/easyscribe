@@ -178,4 +178,66 @@ contract Subscriptions {
         
         return periods * tokens_per_time_unit;
     }
+    
+    function getClientSubscriptionCount(
+        address _client
+    ) public view returns (uint256) {
+        return clients[_client].length;
+    }
+    
+    function getProviderSubscription(
+        address _client,
+        uint256 _index
+    ) public view returns 
+    (
+        address,
+        address,
+        address,
+        uint256,
+        uint256,
+        uint256,
+        bool
+    ) {
+        Subscription memory subscription = subscriptions[clients[_client][_index]];
+        return (
+            subscription.client,
+            subscription.token,
+            subscription.provider,
+            subscription.time_unit,
+            subscription.tokens_per_time_unit,
+            subscription.last_payment_at,
+            subscription.canceled
+        );
+    }
+    
+    function getProviderSubscriptionCount(
+        address _provider
+    ) public view returns (uint256) {
+        return providers[_provider].length;
+    }
+    
+    function getClientSubscription(
+        address _provider,
+        uint256 _index
+    ) public view returns 
+    (
+        address,
+        address,
+        address,
+        uint256,
+        uint256,
+        uint256,
+        bool
+    ) {
+        Subscription memory subscription = subscriptions[providers[_provider][_index]];
+        return (
+            subscription.client,
+            subscription.token,
+            subscription.provider,
+            subscription.time_unit,
+            subscription.tokens_per_time_unit,
+            subscription.last_payment_at,
+            subscription.canceled
+        );
+    }
 }

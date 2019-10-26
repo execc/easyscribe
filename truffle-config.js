@@ -14,8 +14,7 @@ module.exports = {
     },
     kovan: {
       provider: () => new HDWalletProvider(KVN_SEED, KVN_URL),
-      network_id: 42,
-      gas: 4700000
+      network_id: 42
     }
   }
 };

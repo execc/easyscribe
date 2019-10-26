@@ -549,12 +549,12 @@
     "42": {
       "events": {},
       "links": {},
-      "address": "0xC7a1453e83c961b4A52642B7DDC3055157A96A57",
-      "transactionHash": "0xd9e47a177834825e0184604f7aa563add9a9e7802f5f6c151056230325b6b420"
+      "address": "0x9262256Ec1e6c860B4ebf878C25171007B1ba41C",
+      "transactionHash": "0x12d2e0f80896e84162e7363db821c63247fd2396703857b3250beaa378d14310"
     }
   },
   "schemaVersion": "3.0.16",
-  "updatedAt": "2019-10-26T09:36:16.579Z",
+  "updatedAt": "2019-10-26T13:56:57.089Z",
   "devdoc": {
     "methods": {}
   },
