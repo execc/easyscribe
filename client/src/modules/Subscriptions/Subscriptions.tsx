@@ -2,6 +2,7 @@ import { message, Table, Tabs, Button, Tag } from "antd";
 import React, { Component } from "react";
 import { Content } from "../../core/layout/Content";
 import SubscriptionsContract from "../../contracts/Subscriptions.json";
+import { format } from "date-fns";
 
 import "./Subscriptions.css";
 
@@ -30,6 +31,7 @@ enum SubscriptionStatus {
 }
 
 type Subscription = {
+  id: string;
   token: string;
   receiverAddress: string;
   period: number; // В минутах
@@ -39,19 +41,22 @@ type Subscription = {
 };
 
 const getMappedSubscriptions = (subscriptions: any[]): Subscription[] => {
-  return subscriptions.map(subcription => ({
-    token: subcription[1],
-    receiverAddress: subcription[2],
-    period: subcription[3] / 60,
-    amount: subcription[4] / Math.pow(10, 18),
-    lastPayment: new Date(Number(subcription[5])),
-    status: subcription[6]
+  return subscriptions.map(subscription => ({
+    id: subscription[0],
+    token: subscription[2],
+    receiverAddress: subscription[3],
+    period: subscription[4] / 60,
+    amount: subscription[5] / Math.pow(10, 18),
+    lastPayment: new Date(Number(subscription[6])),
+    status: subscription[7]
       ? SubscriptionStatus.INACTIVE
       : SubscriptionStatus.ACTIVE,
   }));
 };
 
 export class Subscriptions extends Component<Props, State> {
+  subscriptionsUpdateTimeout: any;
+
   state: State = {
     contract: null,
     tab: SubscriptionsTab.ACTIVE,
@@ -60,12 +65,25 @@ export class Subscriptions extends Component<Props, State> {
   };
 
   componentDidMount(): void {
-    this.getSubsciptions();
+    this.getSubsciptions(true);
+
+    this.subscriptionsUpdateTimeout = setInterval(
+      () => this.getSubsciptions(),
+      60 * 1000
+    );
   }
 
-  getSubsciptions = async () => {
+  componentWillUnmount(): void {
+    if (this.subscriptionsUpdateTimeout) {
+      clearInterval(this.subscriptionsUpdateTimeout);
+    }
+  }
+
+  getSubsciptions = async (withLoading?: boolean) => {
     this.setState({
-      subscriptionsLoading: true,
+      subscriptionsLoading: withLoading
+        ? true
+        : this.state.subscriptionsLoading,
     });
 
     try {
@@ -100,11 +118,15 @@ export class Subscriptions extends Component<Props, State> {
       const subscriptions = await Promise.all(getSubscriptionRequests);
       this.setState({
         subscriptions: getMappedSubscriptions(subscriptions),
-        subscriptionsLoading: false,
+        subscriptionsLoading: withLoading
+          ? false
+          : this.state.subscriptionsLoading,
       });
     } catch (error) {
       this.setState({
-        subscriptionsLoading: false,
+        subscriptionsLoading: withLoading
+          ? false
+          : this.state.subscriptionsLoading,
       });
       message.error("Произошла ошибка получении подписок");
       console.error(error);
@@ -124,6 +146,11 @@ export class Subscriptions extends Component<Props, State> {
     {
       title: "Amount",
       dataIndex: "amount",
+    },
+    {
+      title: "Last payment",
+      dataIndex: "lastPayment",
+      render: (date: Date) => format(date, "dd.MM.yyyy HH:mm"),
     },
     {
       title: "Actions",
@@ -177,6 +204,8 @@ export class Subscriptions extends Component<Props, State> {
     switch (status) {
       case SubscriptionStatus.ACTIVE:
         return <Tag color="green">Active</Tag>;
+      case SubscriptionStatus.INACTIVE:
+        return <Tag color="red">Active</Tag>;
       default:
         return status;
     }
