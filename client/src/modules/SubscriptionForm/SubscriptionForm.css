@@ -22,3 +22,12 @@
   justify-content: center;
   align-items: center;
 }
+
+.connect-block {
+  display: flex;
+  padding-top: 20px;
+}
+
+.connect-block .btn {
+  margin-right: 10px;
+}
