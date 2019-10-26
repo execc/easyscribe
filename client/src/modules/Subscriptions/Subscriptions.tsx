@@ -1,4 +1,4 @@
-import { message, Table, Tabs } from "antd";
+import { message, Table, Tabs, Button, Tag } from "antd";
 import React, { Component } from "react";
 import { Content } from "../../core/layout/Content";
 import getWeb3 from "../../utils/getWeb3";
@@ -15,11 +15,16 @@ type Props = {
 type State = {
   contract: any;
   tab: SubscriptionsTab;
+  subscriptions: any[];
 };
 
 enum SubscriptionsTab {
+  ACTIVE = "Active",
+  INACTIVE = "Inactive",
+}
+
+enum SubscriptionStatus {
   ACTIVE = "ACTIVE",
-  INACTIVE = "INACTIVE",
 }
 
 export class Subscriptions extends Component<Props, State> {
@@ -28,6 +33,13 @@ export class Subscriptions extends Component<Props, State> {
   state: State = {
     contract: null,
     tab: SubscriptionsTab.ACTIVE,
+    subscriptions: [
+      {
+        serviceName: "Ya.Music",
+        status: SubscriptionStatus.ACTIVE,
+        amount: "2$",
+      },
+    ],
   };
 
   componentDidMount = async () => {
@@ -62,22 +74,65 @@ export class Subscriptions extends Component<Props, State> {
     }
   };
 
-  columns = [
+  getColumns = () => [
     {
       title: "Service",
+      dataIndex: "serviceName",
     },
     {
       title: "Status",
+      dataIndex: "status",
+      render: this.renderStatus,
     },
     {
       title: "Amount",
+      dataIndex: "amount",
+    },
+    {
+      title: "Actions",
+      render: this.renderActions,
     },
   ];
+
+  getTableData = () => {
+    const { subscriptions, tab } = this.state;
+
+    return subscriptions.filter(({ status }: any) => {
+      return tab === SubscriptionsTab.ACTIVE
+        ? status === SubscriptionStatus.ACTIVE
+        : status !== SubscriptionStatus.ACTIVE;
+    });
+  };
 
   handleOnTabChange = (tab: SubscriptionsTab) => {
     this.setState({
       tab,
     });
+  };
+
+  handleCancelFactory = (id: string) => async () => {
+    return Promise.resolve();
+  };
+
+  renderStatus = (status: SubscriptionStatus) => {
+    switch (status) {
+      case SubscriptionStatus.ACTIVE:
+        return <Tag color="green">Active</Tag>;
+      default:
+        return status;
+    }
+  };
+
+  renderActions = (record: any) => {
+    if (record.status === SubscriptionStatus.ACTIVE) {
+      return (
+        <Button type="ghost" onClick={this.handleCancelFactory(record.id)}>
+          Cancel
+        </Button>
+      );
+    }
+
+    return null;
   };
 
   renderTabs = () => {
@@ -97,12 +152,13 @@ export class Subscriptions extends Component<Props, State> {
   renderTable = () => {
     return (
       <Table
-        columns={this.columns}
+        columns={this.getColumns()}
         locale={{
           emptyText: (
             <div style={{ padding: "5px" }}>You have not subscriptions yet</div>
           ),
         }}
+        dataSource={this.getTableData()}
       />
     );
   };
