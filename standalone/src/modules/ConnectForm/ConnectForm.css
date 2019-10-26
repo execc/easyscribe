@@ -1,0 +1,42 @@
+.subscribe-form {
+  min-width: 300px;
+  max-width: 500px;
+  padding: 40px !important;
+  border: 1px solid #d9d9d9;
+  border-radius: 5px;
+}
+
+.subscribe-form-footer .ant-form-item-control {
+  display: flex;
+  justify-content: center;
+}
+
+.subscribe-form-header {
+  font-size: 18pt;
+  font-weight: bold;
+  text-align: center;
+  padding-bottom: 20px;
+}
+
+.subscribe-button {
+  width: 100%;
+}
+
+.additional-info {
+  color: #999;
+  line-height: normal;
+  text-align: center;
+  padding-top: 10px;
+}
+
+.ant-modal-body {
+  padding: 0 !important;
+}
+
+.ant-modal-body .subscribe-form {
+  max-width: unset;
+}
+
+.ant-modal-footer {
+  display: none;
+}
