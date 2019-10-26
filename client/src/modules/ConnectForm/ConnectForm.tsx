@@ -1,26 +1,33 @@
 import { Button, Form, message, Select } from "antd";
 import { FormComponentProps } from "antd/es/form";
+import { OptionProps } from "antd/es/select";
 import React, { FormEvent } from "react";
 
 import "./ConnectForm.css";
 import SubscriptionsContract from "../../contracts/Subscriptions.json";
 
+export type ConnectFormConfig = {
+  amount: string;
+  period: string;
+  accountTo: string;
+  paymentMethods: OptionProps[];
+};
+
 type OwnProps = {
   web3: any;
   account: any;
-  config: any;
+  config: ConnectFormConfig;
 };
 
 type Props = OwnProps & FormComponentProps;
 
 class ConnectForm extends React.Component<Props> {
   handleSubscribe = async () => {
-
     try {
       const {
         web3,
-        account: accountFrom,
         config: { period, amount, accountTo },
+        form: { getFieldsValue },
       } = this.props;
 
       const networkId = await web3.eth.net.getId();
@@ -37,9 +44,13 @@ class ConnectForm extends React.Component<Props> {
       );
 
       await contract.methods
-        // .createSubscription("0xc4375b7de8af5a38a93548eb8453a498222c4ff2", accountTo, period, amount)
-          .createSubscription("0xc4375b7de8af5a38a93548eb8453a498222c4ff2", "0x8D933D915Ae4f74D1b5BA32466c5676F2E15E5A1", 60, '10000000000000000')
-          .send({ from: this.props.account });
+        .createSubscription(
+          getFieldsValue().paymentMethod,
+          accountTo,
+          period,
+          amount
+        )
+        .send({ from: this.props.account });
     } catch (error) {
       message.error("Произошла ошибка подписке");
       console.error(error);
@@ -57,22 +68,34 @@ class ConnectForm extends React.Component<Props> {
     });
   };
 
-  render() {
+  renderPaymentMethods = () => {
     const {
-      config: { paymentMethod },
+      form: { getFieldDecorator },
+      config: { paymentMethods },
     } = this.props;
 
+    if (!paymentMethods) {
+      return null;
+    }
+
+    return (
+      <Form.Item label="Payment method">
+        {getFieldDecorator("paymentMethod")(
+          <Select placeholder="Payment method" defaultActiveFirstOption>
+            {paymentMethods.map(method => (
+              <Select.Option key={method.value}>{method.title}</Select.Option>
+            ))}
+          </Select>
+        )}
+      </Form.Item>
+    );
+  };
+
+  render() {
     return (
       <Form className="subscribe-form" onSubmit={this.handleSubmit}>
         <div className="subscribe-form-header">Subscription</div>
-        <Form.Item label="Payment method">
-          <Select placeholder="Payment method" defaultActiveFirstOption>
-            <Select.Option key={paymentMethod || "ulala"}>{paymentMethod || "ulala"}</Select.Option>
-            {/*{this.props.config.map(method => (*/}
-            {/*  <Select.Option key={method}>{method}</Select.Option>*/}
-            {/*))}*/}
-          </Select>
-        </Form.Item>
+        {this.renderPaymentMethods()}
         <Form.Item className="subscribe-form-footer">
           <Button type="primary" htmlType="submit">
             Subscribe
