@@ -57,7 +57,7 @@ class App extends Component<{}, State> {
     return (
       <Router history={history}>
         <Switch>
-          <Route component={Subscriptions} />
+          <Route path="/subscriptions" component={() => <Subscriptions account={account} web3={this.web3}/>} />
         </Switch>
       </Router>
     );

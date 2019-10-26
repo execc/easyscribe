@@ -1,8 +1,7 @@
 import { message, Table, Tabs, Button, Tag } from "antd";
 import React, { Component } from "react";
 import { Content } from "../../core/layout/Content";
-import getWeb3 from "../../utils/getWeb3";
-import SimpleStorageContract from "../../contracts/SimpleStorage.json";
+import SubscriptionsContract from "../../contracts/Subscriptions.json";
 
 import "./Subscriptions.css";
 
@@ -10,12 +9,14 @@ const { TabPane } = Tabs;
 
 type Props = {
   account: any;
+  web3: any;
 };
 
 type State = {
   contract: any;
   tab: SubscriptionsTab;
   subscriptions: any[];
+  subscriptionsLoading: boolean;
 };
 
 enum SubscriptionsTab {
@@ -25,51 +26,87 @@ enum SubscriptionsTab {
 
 enum SubscriptionStatus {
   ACTIVE = "ACTIVE",
+  INACTIVE = "INACTIVE",
 }
 
-export class Subscriptions extends Component<Props, State> {
-  web3: any;
+type Subscription = {
+  token: string;
+  receiverAddress: string;
+  period: number; // В минутах
+  amount: number; // В долларах
+  lastPayment: Date;
+  status: SubscriptionStatus;
+};
 
+const getMappedSubscriptions = (subscriptions: any[]): Subscription[] => {
+  return subscriptions.map(subcription => ({
+    token: subcription[1],
+    receiverAddress: subcription[2],
+    period: subcription[3] / 60,
+    amount: subcription[4] / Math.pow(10, 18),
+    lastPayment: new Date(Number(subcription[5])),
+    status: subcription[6]
+      ? SubscriptionStatus.INACTIVE
+      : SubscriptionStatus.ACTIVE,
+  }));
+};
+
+export class Subscriptions extends Component<Props, State> {
   state: State = {
     contract: null,
     tab: SubscriptionsTab.ACTIVE,
-    subscriptions: [
-      {
-        serviceName: "Ya.Music",
-        status: SubscriptionStatus.ACTIVE,
-        amount: "2$",
-      },
-    ],
+    subscriptions: [],
+    subscriptionsLoading: false,
   };
 
-  componentDidMount = async () => {
+  componentDidMount(): void {
+    this.getSubsciptions();
+  }
+
+  getSubsciptions = async () => {
+    this.setState({
+      subscriptionsLoading: true,
+    });
+
     try {
-      // Get network provider and web3 instance.
-      const web3 = await getWeb3();
+      const { web3 } = this.props;
 
-      // Get the contract instance.
       const networkId = await web3.eth.net.getId();
-
       if (networkId !== 42) {
         throw new Error(`networkId: ${networkId}`);
       }
 
-      const deployedNetwork = (SimpleStorageContract.networks as any)[
+      const deployedNetwork = (SubscriptionsContract.networks as any)[
         networkId
       ];
-      const instance = new web3.eth.Contract(
-        SimpleStorageContract.abi,
+      const contract = new web3.eth.Contract(
+        SubscriptionsContract.abi,
         deployedNetwork && deployedNetwork.address
       );
 
-      // Set web3, accounts, and contract to the state, and then proceed with an
-      // example of interacting with the contract's methods.
-      this.setState({ contract: instance });
+      const count = await contract.methods
+        .getClientSubscriptionCount(this.props.account)
+        .call({ from: this.props.account });
 
-      this.web3 = web3;
+      const getSubscriptionRequests = [];
+      for (let i = 0; i < count; i++) {
+        getSubscriptionRequests.push(
+          contract.methods
+            .getClientSubscription(this.props.account, i)
+            .call({ from: this.props.account })
+        );
+      }
+
+      const subscriptions = await Promise.all(getSubscriptionRequests);
+      this.setState({
+        subscriptions: getMappedSubscriptions(subscriptions),
+        subscriptionsLoading: false,
+      });
     } catch (error) {
-      // Catch any errors for any of the above operations.
-      message.error("Произошла ошибка при инициализации приложения");
+      this.setState({
+        subscriptionsLoading: false,
+      });
+      message.error("Произошла ошибка получении подписок");
       console.error(error);
     }
   };
@@ -111,7 +148,29 @@ export class Subscriptions extends Component<Props, State> {
   };
 
   handleCancelFactory = (id: string) => async () => {
-    return Promise.resolve();
+    try {
+      const { web3 } = this.props;
+
+      const networkId = await web3.eth.net.getId();
+      if (networkId !== 42) {
+        throw new Error(`networkId: ${networkId}`);
+      }
+
+      const deployedNetwork = (SubscriptionsContract.networks as any)[
+        networkId
+      ];
+      const contract = new web3.eth.Contract(
+        SubscriptionsContract.abi,
+        deployedNetwork && deployedNetwork.address
+      );
+
+      await contract.methods
+        .cancelSubscription(id)
+        .send({ from: this.props.account });
+    } catch (error) {
+      message.error("Произошла ошибка при отмене подписки");
+      console.error(error);
+    }
   };
 
   renderStatus = (status: SubscriptionStatus) => {
@@ -150,6 +209,8 @@ export class Subscriptions extends Component<Props, State> {
   };
 
   renderTable = () => {
+    const { subscriptionsLoading } = this.state;
+
     return (
       <Table
         columns={this.getColumns()}
@@ -158,6 +219,7 @@ export class Subscriptions extends Component<Props, State> {
             <div style={{ padding: "5px" }}>You have not subscriptions yet</div>
           ),
         }}
+        loading={subscriptionsLoading}
         dataSource={this.getTableData()}
       />
     );
