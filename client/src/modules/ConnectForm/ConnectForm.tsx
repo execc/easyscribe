@@ -72,14 +72,13 @@ class ConnectForm extends React.Component<Props> {
     } catch (error) {
       message.error("Произошла ошибка подписке");
       console.error(error);
-      debugger;
     }
   };
 
   handleSubmit = (e: FormEvent) => {
     e.preventDefault();
 
-    this.props.form.validateFields((err, values) => {
+    this.props.form.validateFields(err => {
       if (!err) {
         this.handleSubscribe();
       }

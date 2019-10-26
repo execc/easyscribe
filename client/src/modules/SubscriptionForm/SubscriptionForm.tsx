@@ -115,26 +115,38 @@ class SubscriptionForm extends React.Component<Props, State> {
 
   renderParamsForm = () => {
     return (
-      <Form onChange={this.handleFormChange} className="subscription-form">
-        {this.renderPeriod()}
-        {this.renderPeriodCount()}
-        {this.renderPrice()}
-        {this.renderPaymentMethod()}
-      </Form>
+      <div className="form-params-wrapper">
+        <Form onChange={this.handleFormChange} className="subscription-form">
+          {this.renderPeriod()}
+          {this.renderPeriodCount()}
+          {this.renderPrice()}
+          {this.renderPaymentMethod()}
+        </Form>
+      </div>
     );
   };
 
-  render() {
+  renderFormPreview = () => {
     const { account, web3 } = this.props;
 
     return (
-      <Content title="Connect service">
-        {this.renderParamsForm()}
+      <div className="form-preview-wrapper">
         <ConnectForm
           account={account}
           web3={web3}
           config={this.getFormConfig()}
         />
+      </div>
+    );
+  };
+
+  render() {
+    return (
+      <Content title="Connect service">
+        <div className="form-configurator">
+          {this.renderParamsForm()}
+          {this.renderFormPreview()}
+        </div>
       </Content>
     );
   }
