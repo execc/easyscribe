@@ -2,9 +2,8 @@ import { message, Table, Tabs, Button, Tag } from "antd";
 import React, { Component } from "react";
 import { Content } from "../../core/layout/Content";
 import SubscriptionsContract from "../../contracts/Subscriptions.json";
-import { format } from "date-fns";
 
-import "./Subscriptions.css";
+import "./ProviderSubscribers.css";
 import {
   SubscriptionsTab,
   SubscriptionStatus,
@@ -25,11 +24,11 @@ type State = {
   contract: any;
   tab: SubscriptionsTab;
   subscriptions: any[];
-  subscriptionsLoading: boolean;
-  waitingSubscriptionIds: string[];
+  subscribersLoading: boolean;
+  waitingSubscribersIds: string[];
 };
 
-export class Subscriptions extends Component<Props, State> {
+export class ProviderSubscribers extends Component<Props, State> {
   subscriptionsUpdateTimeout: any;
   waitingSubscriptionIntervals: any = {};
 
@@ -37,15 +36,15 @@ export class Subscriptions extends Component<Props, State> {
     contract: null,
     tab: SubscriptionsTab.ACTIVE,
     subscriptions: [],
-    subscriptionsLoading: false,
-    waitingSubscriptionIds: [],
+    subscribersLoading: false,
+    waitingSubscribersIds: [],
   };
 
   componentDidMount(): void {
-    this.getSubsciptions(true);
+    this.getSubscribers(true);
 
     this.subscriptionsUpdateTimeout = setInterval(
-      () => this.getSubsciptions(),
+      () => this.getSubscribers(),
       UPDATE_INTERVAL
     );
   }
@@ -64,17 +63,15 @@ export class Subscriptions extends Component<Props, State> {
     });
 
     this.setState({
-      waitingSubscriptionIds: this.state.waitingSubscriptionIds.filter(
+      waitingSubscribersIds: this.state.waitingSubscribersIds.filter(
         (id: string) => !ids.includes(id)
       ),
     });
   };
 
-  getSubsciptions = async (withLoading?: boolean) => {
+  getSubscribers = async (withLoading?: boolean) => {
     this.setState({
-      subscriptionsLoading: withLoading
-        ? true
-        : this.state.subscriptionsLoading,
+      subscribersLoading: withLoading ? true : this.state.subscribersLoading,
     });
 
     try {
@@ -94,14 +91,14 @@ export class Subscriptions extends Component<Props, State> {
       );
 
       const count = await contract.methods
-        .getClientSubscriptionCount(this.props.account)
+        .getProviderSubscriptionCount(this.props.account)
         .call({ from: this.props.account });
 
       const getSubscriptionRequests = [];
       for (let i = 0; i < count; i++) {
         getSubscriptionRequests.push(
           contract.methods
-            .getClientSubscription(this.props.account, i)
+            .getProviderSubscription(this.props.account, i)
             .call({ from: this.props.account })
         );
       }
@@ -111,10 +108,8 @@ export class Subscriptions extends Component<Props, State> {
 
       this.setState({
         subscriptions: mapedSubscriptions,
-        subscriptionsLoading: withLoading
-          ? false
-          : this.state.subscriptionsLoading,
-        waitingSubscriptionIds: this.state.waitingSubscriptionIds.filter(
+        subscribersLoading: withLoading ? false : this.state.subscribersLoading,
+        waitingSubscribersIds: this.state.waitingSubscribersIds.filter(
           (id: string) => {
             const newSub = mapedSubscriptions.find(
               subscription => subscription.id === id
@@ -129,11 +124,9 @@ export class Subscriptions extends Component<Props, State> {
       });
     } catch (error) {
       this.setState({
-        subscriptionsLoading: withLoading
-          ? false
-          : this.state.subscriptionsLoading,
+        subscribersLoading: withLoading ? false : this.state.subscribersLoading,
       });
-      message.error("Произошла ошибка получении подписок");
+      message.error("Subscriptions receiving ends with error");
       console.error(error);
     }
   };
@@ -161,9 +154,8 @@ export class Subscriptions extends Component<Props, State> {
       dataIndex: "periodCount",
     },
     {
-      title: "Last payment",
-      dataIndex: "lastPayment",
-      render: (date: Date) => format(date, "dd.MM.yyyy HH:mm"),
+      title: "Total sum",
+      render: (record: any) => record.amount * record.periodCount,
     },
     {
       title: "Actions",
@@ -182,10 +174,10 @@ export class Subscriptions extends Component<Props, State> {
   };
 
   addWaitingId = (id: string) => {
-    const { waitingSubscriptionIds } = this.state;
+    const { waitingSubscribersIds } = this.state;
 
     this.setState({
-      waitingSubscriptionIds: [...waitingSubscriptionIds, id],
+      waitingSubscribersIds: [...waitingSubscribersIds, id],
     });
 
     this.waitingSubscriptionIntervals[id] = setTimeout(
@@ -200,7 +192,7 @@ export class Subscriptions extends Component<Props, State> {
     });
   };
 
-  handleCancelFactory = (id: string) => async () => {
+  handleSellFactory = (id: string) => async () => {
     try {
       this.addWaitingId(id);
 
@@ -219,11 +211,11 @@ export class Subscriptions extends Component<Props, State> {
         deployedNetwork && deployedNetwork.address
       );
 
-      await contract.methods
-        .cancelSubscription(id)
-        .send({ from: this.props.account });
+      await contract.methods.withdraw(id).send({ from: this.props.account });
+
+      await contract.methods.sell(id, "0.1").send({ from: this.props.account });
     } catch (error) {
-      message.error("Произошла ошибка при отмене подписки");
+      message.error("Sell ends with error");
       console.error(error);
     }
   };
@@ -241,9 +233,9 @@ export class Subscriptions extends Component<Props, State> {
 
   renderActions = (record: any) => {
     const { id, status } = record;
-    const { waitingSubscriptionIds } = this.state;
+    const { waitingSubscribersIds } = this.state;
 
-    const waiting = waitingSubscriptionIds.includes(id);
+    const waiting = waitingSubscribersIds.includes(id);
 
     if (status === SubscriptionStatus.ACTIVE) {
       return (
@@ -251,14 +243,31 @@ export class Subscriptions extends Component<Props, State> {
           type="ghost"
           disabled={waiting}
           loading={waiting}
-          onClick={this.handleCancelFactory(record.id)}
+          onClick={this.handleSellFactory(record.id)}
         >
-          Cancel
+          Sell
         </Button>
       );
     }
 
     return null;
+  };
+
+  renderTable = () => {
+    const { subscribersLoading } = this.state;
+
+    return (
+      <Table
+        columns={this.getColumns()}
+        locale={{
+          emptyText: (
+            <div style={{ padding: "5px" }}>You have not subscribers yet</div>
+          ),
+        }}
+        loading={subscribersLoading}
+        dataSource={this.getTableData()}
+      />
+    );
   };
 
   renderTabs = () => {
@@ -275,26 +284,9 @@ export class Subscriptions extends Component<Props, State> {
     );
   };
 
-  renderTable = () => {
-    const { subscriptionsLoading } = this.state;
-
-    return (
-      <Table
-        columns={this.getColumns()}
-        locale={{
-          emptyText: (
-            <div style={{ padding: "5px" }}>You have not subscriptions yet</div>
-          ),
-        }}
-        loading={subscriptionsLoading}
-        dataSource={this.getTableData()}
-      />
-    );
-  };
-
   render() {
     return (
-      <Content title="Subscriptions">
+      <Content title="Subscribers">
         {this.renderTabs()}
         {this.renderTable()}
       </Content>

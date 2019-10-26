@@ -1,6 +1,7 @@
 import { message, Spin } from "antd";
 import React, { Component } from "react";
 import { Route, Router, Switch } from "react-router";
+import { ProviderSubscribers } from "./modules/ProviderSubscribers/ProviderSubscribers";
 import { SubscriptionForm } from "./modules/SubscriptionForm/SubscriptionForm";
 import { Subscriptions } from "./modules/Subscriptions/Subscriptions";
 import getWeb3 from "./utils/getWeb3";
@@ -62,6 +63,12 @@ class App extends Component<{}, State> {
             path="/subscriptions"
             component={() => (
               <Subscriptions account={account} web3={this.web3} />
+            )}
+          />
+          <Route
+            path="/subscribers"
+            component={() => (
+              <ProviderSubscribers account={account} web3={this.web3} />
             )}
           />
           <Route
