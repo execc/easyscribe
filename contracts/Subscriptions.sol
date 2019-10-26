@@ -190,23 +190,28 @@ contract Subscriptions {
         uint256 _index
     ) public view returns 
     (
+        bytes32,
         address,
         address,
         address,
         uint256,
         uint256,
         uint256,
-        bool
+        bool,
+        uint256
     ) {
-        Subscription memory subscription = subscriptions[clients[_client][_index]];
+        bytes32 id = clients[_client][_index];
+        Subscription memory subscription = subscriptions[id];
         return (
+            id,
             subscription.client,
             subscription.token,
             subscription.provider,
             subscription.time_unit,
             subscription.tokens_per_time_unit,
             subscription.last_payment_at,
-            subscription.canceled
+            subscription.canceled,
+            getSubscriptionAmount(id)
         );
     }
     
@@ -221,23 +226,28 @@ contract Subscriptions {
         uint256 _index
     ) public view returns 
     (
+        bytes32,
         address,
         address,
         address,
         uint256,
         uint256,
         uint256,
-        bool
+        bool,
+        uint256
     ) {
-        Subscription memory subscription = subscriptions[providers[_provider][_index]];
+        bytes32 id = providers[_provider][_index];
+        Subscription memory subscription = subscriptions[id];
         return (
+            id,
             subscription.client,
             subscription.token,
             subscription.provider,
             subscription.time_unit,
             subscription.tokens_per_time_unit,
             subscription.last_payment_at,
-            subscription.canceled
+            subscription.canceled,
+            getSubscriptionAmount(id)
         );
     }
 }
