@@ -8,7 +8,8 @@ import "./Subscriptions.css";
 
 const { TabPane } = Tabs;
 
-const UPDATE_INTERVAL = 10;
+const UPDATE_INTERVAL = 10 * 1000;
+const OPERATION_WAITING_INTERVAL = 120 * 1000;
 
 type Props = {
   account: any;
@@ -20,6 +21,7 @@ type State = {
   tab: SubscriptionsTab;
   subscriptions: any[];
   subscriptionsLoading: boolean;
+  waitingSubscriptionIds: string[];
 };
 
 enum SubscriptionsTab {
@@ -33,6 +35,7 @@ enum SubscriptionStatus {
 }
 
 type Subscription = {
+  key: string;
   id: string;
   token: string;
   receiverAddress: string;
@@ -44,6 +47,7 @@ type Subscription = {
 
 const getMappedSubscriptions = (subscriptions: any[]): Subscription[] => {
   return subscriptions.map(subscription => ({
+    key: subscription[0],
     id: subscription[0],
     token: subscription[2],
     receiverAddress: subscription[3],
@@ -58,12 +62,14 @@ const getMappedSubscriptions = (subscriptions: any[]): Subscription[] => {
 
 export class Subscriptions extends Component<Props, State> {
   subscriptionsUpdateTimeout: any;
+  waitingSubscriptionIntervals: any = {};
 
   state: State = {
     contract: null,
     tab: SubscriptionsTab.ACTIVE,
     subscriptions: [],
     subscriptionsLoading: false,
+    waitingSubscriptionIds: [],
   };
 
   componentDidMount(): void {
@@ -71,7 +77,7 @@ export class Subscriptions extends Component<Props, State> {
 
     this.subscriptionsUpdateTimeout = setInterval(
       () => this.getSubsciptions(),
-      UPDATE_INTERVAL * 1000
+      UPDATE_INTERVAL
     );
   }
 
@@ -79,7 +85,21 @@ export class Subscriptions extends Component<Props, State> {
     if (this.subscriptionsUpdateTimeout) {
       clearInterval(this.subscriptionsUpdateTimeout);
     }
+
+    this.clearWaitingIntervals(Object.keys(this.waitingSubscriptionIntervals));
   }
+
+  clearWaitingIntervals = (ids: string[]) => {
+    ids.forEach((id: string) => {
+      delete this.waitingSubscriptionIntervals[id];
+    });
+
+    this.setState({
+      waitingSubscriptionIds: this.state.waitingSubscriptionIds.filter(
+        (id: string) => !ids.includes(id)
+      ),
+    });
+  };
 
   getSubsciptions = async (withLoading?: boolean) => {
     this.setState({
@@ -123,6 +143,10 @@ export class Subscriptions extends Component<Props, State> {
         subscriptionsLoading: withLoading
           ? false
           : this.state.subscriptionsLoading,
+        waitingSubscriptionIds: this.state.waitingSubscriptionIds.filter(
+          (id: string) =>
+            subscriptions.find(subscription => subscription.id === id)
+        ),
       });
     } catch (error) {
       this.setState({
@@ -170,6 +194,19 @@ export class Subscriptions extends Component<Props, State> {
     });
   };
 
+  addWaitingId = (id: string) => {
+    const { waitingSubscriptionIds } = this.state;
+
+    this.setState({
+      waitingSubscriptionIds: [...waitingSubscriptionIds, id],
+    });
+
+    this.waitingSubscriptionIntervals[id] = setTimeout(
+      () => this.clearWaitingIntervals([id]),
+      OPERATION_WAITING_INTERVAL
+    );
+  };
+
   handleOnTabChange = (tab: SubscriptionsTab) => {
     this.setState({
       tab,
@@ -196,6 +233,8 @@ export class Subscriptions extends Component<Props, State> {
       await contract.methods
         .cancelSubscription(id)
         .send({ from: this.props.account });
+
+      this.addWaitingId(id);
     } catch (error) {
       message.error("Произошла ошибка при отмене подписки");
       console.error(error);
@@ -214,9 +253,19 @@ export class Subscriptions extends Component<Props, State> {
   };
 
   renderActions = (record: any) => {
-    if (record.status === SubscriptionStatus.ACTIVE) {
+    const { id, status } = record;
+    const { waitingSubscriptionIds } = this.state;
+
+    const waiting = waitingSubscriptionIds.includes(id);
+
+    if (status === SubscriptionStatus.ACTIVE) {
       return (
-        <Button type="ghost" onClick={this.handleCancelFactory(record.id)}>
+        <Button
+          type="ghost"
+          disabled={waiting}
+          loading={waiting}
+          onClick={this.handleCancelFactory(record.id)}
+        >
           Cancel
         </Button>
       );
