@@ -40,6 +40,7 @@ type Subscription = {
   token: string;
   receiverAddress: string;
   period: number; // В минутах
+  periodCount: number;
   amount: number; // В долларах
   lastPayment: Date;
   status: SubscriptionStatus;
@@ -57,6 +58,7 @@ const getMappedSubscriptions = (subscriptions: any[]): Subscription[] => {
     status: subscription[7]
       ? SubscriptionStatus.INACTIVE
       : SubscriptionStatus.ACTIVE,
+    periodCount: subscription[9],
   }));
 };
 
@@ -138,14 +140,24 @@ export class Subscriptions extends Component<Props, State> {
       }
 
       const subscriptions = await Promise.all(getSubscriptionRequests);
+      const mapedSubscriptions = getMappedSubscriptions(subscriptions);
+
       this.setState({
-        subscriptions: getMappedSubscriptions(subscriptions),
+        subscriptions: mapedSubscriptions,
         subscriptionsLoading: withLoading
           ? false
           : this.state.subscriptionsLoading,
         waitingSubscriptionIds: this.state.waitingSubscriptionIds.filter(
-          (id: string) =>
-            subscriptions.find(subscription => subscription.id === id)
+          (id: string) => {
+            const newSub = mapedSubscriptions.find(
+              subscription => subscription.id === id
+            );
+            const oldSub = this.state.subscriptions.find(
+              subscription => subscription.id === id
+            );
+
+            return newSub && oldSub && newSub.status === oldSub.status;
+          }
         ),
       });
     } catch (error) {
@@ -172,6 +184,14 @@ export class Subscriptions extends Component<Props, State> {
     {
       title: "Amount",
       dataIndex: "amount",
+    },
+    {
+      title: "Period",
+      dataIndex: "period",
+    },
+    {
+      title: "Period count",
+      dataIndex: "periodCount",
     },
     {
       title: "Last payment",
@@ -215,6 +235,8 @@ export class Subscriptions extends Component<Props, State> {
 
   handleCancelFactory = (id: string) => async () => {
     try {
+      this.addWaitingId(id);
+
       const { web3 } = this.props;
 
       const networkId = await web3.eth.net.getId();
@@ -233,8 +255,6 @@ export class Subscriptions extends Component<Props, State> {
       await contract.methods
         .cancelSubscription(id)
         .send({ from: this.props.account });
-
-      this.addWaitingId(id);
     } catch (error) {
       message.error("Произошла ошибка при отмене подписки");
       console.error(error);
