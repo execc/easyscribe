@@ -49,6 +49,7 @@ class SubscriptionForm extends React.Component<Props, State> {
       amount: (config.amount * Math.pow(10, 18)).toString(),
       accountTo: config.accountTo,
       period: (config.period * 60).toString(),
+      periodCount: config.periodCount.toString(),
       paymentMethods: paymentMethodOptions,
     } as any;
   };
@@ -60,7 +61,19 @@ class SubscriptionForm extends React.Component<Props, State> {
 
     return (
       <Form.Item label="Period (min)">
-        {getFieldDecorator("period")(<InputNumber />)}
+        {getFieldDecorator("period", { initialValue: 1 })(<InputNumber />)}
+      </Form.Item>
+    );
+  };
+
+  renderPeriodCount = () => {
+    const {
+      form: { getFieldDecorator },
+    } = this.props;
+
+    return (
+      <Form.Item label="Period count">
+        {getFieldDecorator("periodCount", { initialValue: 2 })(<InputNumber />)}
       </Form.Item>
     );
   };
@@ -72,7 +85,7 @@ class SubscriptionForm extends React.Component<Props, State> {
 
     return (
       <Form.Item label="Amount ($)">
-        {getFieldDecorator("amount")(<InputNumber />)}
+        {getFieldDecorator("amount", { initialValue: 0.01 })(<InputNumber />)}
       </Form.Item>
     );
   };
@@ -86,7 +99,7 @@ class SubscriptionForm extends React.Component<Props, State> {
       <>
         <Form.Item label="Payment method">
           {getFieldDecorator("paymentMethod")(
-            <Select>
+            <Select defaultActiveFirstOption>
               {paymentMethodOptions.map(option => (
                 <Select.Option key={option.value}>{option.title}</Select.Option>
               ))}
@@ -104,6 +117,7 @@ class SubscriptionForm extends React.Component<Props, State> {
     return (
       <Form onChange={this.handleFormChange} className="subscription-form">
         {this.renderPeriod()}
+        {this.renderPeriodCount()}
         {this.renderPrice()}
         {this.renderPaymentMethod()}
       </Form>

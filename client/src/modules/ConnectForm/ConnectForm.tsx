@@ -5,10 +5,12 @@ import React, { FormEvent } from "react";
 
 import "./ConnectForm.css";
 import SubscriptionsContract from "../../contracts/Subscriptions.json";
+import IERC20Contract from "../../contracts/IERC20.json";
 
 export type ConnectFormConfig = {
   amount: string;
   period: string;
+  periodCount: string;
   accountTo: string;
   paymentMethods: OptionProps[];
 };
@@ -26,9 +28,11 @@ class ConnectForm extends React.Component<Props> {
     try {
       const {
         web3,
-        config: { period, amount, accountTo },
+        config: { period, amount, accountTo, periodCount },
         form: { getFieldsValue },
       } = this.props;
+
+      const tokenAddress = getFieldsValue().paymentMethod;
 
       const networkId = await web3.eth.net.getId();
       if (networkId !== 42) {
@@ -38,17 +42,31 @@ class ConnectForm extends React.Component<Props> {
       const deployedNetwork = (SubscriptionsContract.networks as any)[
         networkId
       ];
-      const contract = new web3.eth.Contract(
+
+      const IERC20ContractInstance = new web3.eth.Contract(
+        IERC20Contract.abi,
+        tokenAddress
+      );
+
+      await IERC20ContractInstance.methods
+        .approve(
+          deployedNetwork.address,
+          (Number(periodCount) * Number(amount)).toString()
+        )
+        .send({ from: this.props.account });
+
+      const SubscriptionsContractInstance = new web3.eth.Contract(
         SubscriptionsContract.abi,
         deployedNetwork && deployedNetwork.address
       );
 
-      await contract.methods
+      await SubscriptionsContractInstance.methods
         .createSubscription(
-          getFieldsValue().paymentMethod,
+          tokenAddress,
           accountTo,
           period,
-          amount
+          amount,
+          periodCount
         )
         .send({ from: this.props.account });
     } catch (error) {
