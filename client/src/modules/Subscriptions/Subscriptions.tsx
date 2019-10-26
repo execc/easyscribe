@@ -8,6 +8,8 @@ import "./Subscriptions.css";
 
 const { TabPane } = Tabs;
 
+const UPDATE_INTERVAL = 10;
+
 type Props = {
   account: any;
   web3: any;
@@ -69,7 +71,7 @@ export class Subscriptions extends Component<Props, State> {
 
     this.subscriptionsUpdateTimeout = setInterval(
       () => this.getSubsciptions(),
-      60 * 1000
+      UPDATE_INTERVAL * 1000
     );
   }
 
@@ -205,7 +207,7 @@ export class Subscriptions extends Component<Props, State> {
       case SubscriptionStatus.ACTIVE:
         return <Tag color="green">Active</Tag>;
       case SubscriptionStatus.INACTIVE:
-        return <Tag color="red">Active</Tag>;
+        return <Tag color="red">Inactive</Tag>;
       default:
         return status;
     }
