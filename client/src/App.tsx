@@ -1,6 +1,7 @@
 import { message, Spin } from "antd";
 import React, { Component } from "react";
 import { Route, Router, Switch } from "react-router";
+import { SubscriptionForm } from "./modules/SubscriptionForm/SubscriptionForm";
 import { Subscriptions } from "./modules/Subscriptions/Subscriptions";
 import getWeb3 from "./utils/getWeb3";
 import { createHashHistory } from "history";
@@ -57,7 +58,19 @@ class App extends Component<{}, State> {
     return (
       <Router history={history}>
         <Switch>
-          <Route component={Subscriptions} />
+          <Route
+            path="/subscriptions"
+            component={() => (
+              <Subscriptions account={account} web3={this.web3} />
+            )}
+          />
+          <Route
+            path="/connect-form"
+            component={() => (
+              <SubscriptionForm account={account} web3={this.web3} />
+            )}
+          />
+          <Route component={() => <div>404</div>} />
         </Switch>
       </Router>
     );

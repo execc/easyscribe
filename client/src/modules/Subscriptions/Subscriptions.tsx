@@ -1,21 +1,27 @@
 import { message, Table, Tabs, Button, Tag } from "antd";
 import React, { Component } from "react";
 import { Content } from "../../core/layout/Content";
-import getWeb3 from "../../utils/getWeb3";
-import SimpleStorageContract from "../../contracts/SimpleStorage.json";
+import SubscriptionsContract from "../../contracts/Subscriptions.json";
+import { format } from "date-fns";
 
 import "./Subscriptions.css";
 
 const { TabPane } = Tabs;
 
+const UPDATE_INTERVAL = 10 * 1000;
+const OPERATION_WAITING_INTERVAL = 120 * 1000;
+
 type Props = {
   account: any;
+  web3: any;
 };
 
 type State = {
   contract: any;
   tab: SubscriptionsTab;
   subscriptions: any[];
+  subscriptionsLoading: boolean;
+  waitingSubscriptionIds: string[];
 };
 
 enum SubscriptionsTab {
@@ -25,51 +31,142 @@ enum SubscriptionsTab {
 
 enum SubscriptionStatus {
   ACTIVE = "ACTIVE",
+  INACTIVE = "INACTIVE",
 }
 
+type Subscription = {
+  key: string;
+  id: string;
+  token: string;
+  receiverAddress: string;
+  period: number; // В минутах
+  periodCount: number;
+  amount: number; // В долларах
+  lastPayment: Date;
+  status: SubscriptionStatus;
+};
+
+const getMappedSubscriptions = (subscriptions: any[]): Subscription[] => {
+  return subscriptions.map(subscription => ({
+    key: subscription[0],
+    id: subscription[0],
+    token: subscription[2],
+    receiverAddress: subscription[3],
+    period: subscription[4] / 60,
+    amount: subscription[5] / Math.pow(10, 18),
+    lastPayment: new Date(Number(subscription[6])),
+    status: subscription[7]
+      ? SubscriptionStatus.INACTIVE
+      : SubscriptionStatus.ACTIVE,
+    periodCount: subscription[9],
+  }));
+};
+
 export class Subscriptions extends Component<Props, State> {
-  web3: any;
+  subscriptionsUpdateTimeout: any;
+  waitingSubscriptionIntervals: any = {};
 
   state: State = {
     contract: null,
     tab: SubscriptionsTab.ACTIVE,
-    subscriptions: [
-      {
-        serviceName: "Ya.Music",
-        status: SubscriptionStatus.ACTIVE,
-        amount: "2$",
-      },
-    ],
+    subscriptions: [],
+    subscriptionsLoading: false,
+    waitingSubscriptionIds: [],
   };
 
-  componentDidMount = async () => {
+  componentDidMount(): void {
+    this.getSubsciptions(true);
+
+    this.subscriptionsUpdateTimeout = setInterval(
+      () => this.getSubsciptions(),
+      UPDATE_INTERVAL
+    );
+  }
+
+  componentWillUnmount(): void {
+    if (this.subscriptionsUpdateTimeout) {
+      clearInterval(this.subscriptionsUpdateTimeout);
+    }
+
+    this.clearWaitingIntervals(Object.keys(this.waitingSubscriptionIntervals));
+  }
+
+  clearWaitingIntervals = (ids: string[]) => {
+    ids.forEach((id: string) => {
+      delete this.waitingSubscriptionIntervals[id];
+    });
+
+    this.setState({
+      waitingSubscriptionIds: this.state.waitingSubscriptionIds.filter(
+        (id: string) => !ids.includes(id)
+      ),
+    });
+  };
+
+  getSubsciptions = async (withLoading?: boolean) => {
+    this.setState({
+      subscriptionsLoading: withLoading
+        ? true
+        : this.state.subscriptionsLoading,
+    });
+
     try {
-      // Get network provider and web3 instance.
-      const web3 = await getWeb3();
+      const { web3 } = this.props;
 
-      // Get the contract instance.
       const networkId = await web3.eth.net.getId();
-
       if (networkId !== 42) {
         throw new Error(`networkId: ${networkId}`);
       }
 
-      const deployedNetwork = (SimpleStorageContract.networks as any)[
+      const deployedNetwork = (SubscriptionsContract.networks as any)[
         networkId
       ];
-      const instance = new web3.eth.Contract(
-        SimpleStorageContract.abi,
+      const contract = new web3.eth.Contract(
+        SubscriptionsContract.abi,
         deployedNetwork && deployedNetwork.address
       );
 
-      // Set web3, accounts, and contract to the state, and then proceed with an
-      // example of interacting with the contract's methods.
-      this.setState({ contract: instance });
+      const count = await contract.methods
+        .getClientSubscriptionCount(this.props.account)
+        .call({ from: this.props.account });
 
-      this.web3 = web3;
+      const getSubscriptionRequests = [];
+      for (let i = 0; i < count; i++) {
+        getSubscriptionRequests.push(
+          contract.methods
+            .getClientSubscription(this.props.account, i)
+            .call({ from: this.props.account })
+        );
+      }
+
+      const subscriptions = await Promise.all(getSubscriptionRequests);
+      const mapedSubscriptions = getMappedSubscriptions(subscriptions);
+
+      this.setState({
+        subscriptions: mapedSubscriptions,
+        subscriptionsLoading: withLoading
+          ? false
+          : this.state.subscriptionsLoading,
+        waitingSubscriptionIds: this.state.waitingSubscriptionIds.filter(
+          (id: string) => {
+            const newSub = mapedSubscriptions.find(
+              subscription => subscription.id === id
+            );
+            const oldSub = this.state.subscriptions.find(
+              subscription => subscription.id === id
+            );
+
+            return newSub && oldSub && newSub.status === oldSub.status;
+          }
+        ),
+      });
     } catch (error) {
-      // Catch any errors for any of the above operations.
-      message.error("Произошла ошибка при инициализации приложения");
+      this.setState({
+        subscriptionsLoading: withLoading
+          ? false
+          : this.state.subscriptionsLoading,
+      });
+      message.error("Произошла ошибка получении подписок");
       console.error(error);
     }
   };
@@ -89,6 +186,19 @@ export class Subscriptions extends Component<Props, State> {
       dataIndex: "amount",
     },
     {
+      title: "Period",
+      dataIndex: "period",
+    },
+    {
+      title: "Period count",
+      dataIndex: "periodCount",
+    },
+    {
+      title: "Last payment",
+      dataIndex: "lastPayment",
+      render: (date: Date) => format(date, "dd.MM.yyyy HH:mm"),
+    },
+    {
       title: "Actions",
       render: this.renderActions,
     },
@@ -104,6 +214,19 @@ export class Subscriptions extends Component<Props, State> {
     });
   };
 
+  addWaitingId = (id: string) => {
+    const { waitingSubscriptionIds } = this.state;
+
+    this.setState({
+      waitingSubscriptionIds: [...waitingSubscriptionIds, id],
+    });
+
+    this.waitingSubscriptionIntervals[id] = setTimeout(
+      () => this.clearWaitingIntervals([id]),
+      OPERATION_WAITING_INTERVAL
+    );
+  };
+
   handleOnTabChange = (tab: SubscriptionsTab) => {
     this.setState({
       tab,
@@ -111,22 +234,58 @@ export class Subscriptions extends Component<Props, State> {
   };
 
   handleCancelFactory = (id: string) => async () => {
-    return Promise.resolve();
+    try {
+      this.addWaitingId(id);
+
+      const { web3 } = this.props;
+
+      const networkId = await web3.eth.net.getId();
+      if (networkId !== 42) {
+        throw new Error(`networkId: ${networkId}`);
+      }
+
+      const deployedNetwork = (SubscriptionsContract.networks as any)[
+        networkId
+      ];
+      const contract = new web3.eth.Contract(
+        SubscriptionsContract.abi,
+        deployedNetwork && deployedNetwork.address
+      );
+
+      await contract.methods
+        .cancelSubscription(id)
+        .send({ from: this.props.account });
+    } catch (error) {
+      message.error("Произошла ошибка при отмене подписки");
+      console.error(error);
+    }
   };
 
   renderStatus = (status: SubscriptionStatus) => {
     switch (status) {
       case SubscriptionStatus.ACTIVE:
         return <Tag color="green">Active</Tag>;
+      case SubscriptionStatus.INACTIVE:
+        return <Tag color="red">Inactive</Tag>;
       default:
         return status;
     }
   };
 
   renderActions = (record: any) => {
-    if (record.status === SubscriptionStatus.ACTIVE) {
+    const { id, status } = record;
+    const { waitingSubscriptionIds } = this.state;
+
+    const waiting = waitingSubscriptionIds.includes(id);
+
+    if (status === SubscriptionStatus.ACTIVE) {
       return (
-        <Button type="ghost" onClick={this.handleCancelFactory(record.id)}>
+        <Button
+          type="ghost"
+          disabled={waiting}
+          loading={waiting}
+          onClick={this.handleCancelFactory(record.id)}
+        >
           Cancel
         </Button>
       );
@@ -150,6 +309,8 @@ export class Subscriptions extends Component<Props, State> {
   };
 
   renderTable = () => {
+    const { subscriptionsLoading } = this.state;
+
     return (
       <Table
         columns={this.getColumns()}
@@ -158,6 +319,7 @@ export class Subscriptions extends Component<Props, State> {
             <div style={{ padding: "5px" }}>You have not subscriptions yet</div>
           ),
         }}
+        loading={subscriptionsLoading}
         dataSource={this.getTableData()}
       />
     );
