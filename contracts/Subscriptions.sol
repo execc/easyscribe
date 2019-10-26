@@ -185,7 +185,7 @@ contract Subscriptions {
         return clients[_client].length;
     }
     
-    function getProviderSubscription(
+    function getClientSubscription(
         address _client,
         uint256 _index
     ) public view returns 
@@ -216,7 +216,7 @@ contract Subscriptions {
         return providers[_provider].length;
     }
     
-    function getClientSubscription(
+    function getProviderSubscription(
         address _provider,
         uint256 _index
     ) public view returns 
