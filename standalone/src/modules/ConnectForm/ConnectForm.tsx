@@ -4,8 +4,10 @@ import { OptionProps } from "antd/es/select";
 import React, { FormEvent } from "react";
 
 import "./ConnectForm.css";
+import "antd/dist/antd.css";
 import SubscriptionsContract from "../../contracts/Subscriptions.json";
 import IERC20Contract from "../../contracts/IERC20.json";
+import getWeb3 from "../../utils/getWeb3";
 
 export type ConnectFormConfig = {
   amount: string;
@@ -16,8 +18,6 @@ export type ConnectFormConfig = {
 };
 
 type OwnProps = {
-  web3: any;
-  account: any;
   config: ConnectFormConfig;
   modalMode?: boolean;
 };
@@ -26,19 +26,11 @@ type Props = OwnProps & FormComponentProps;
 
 type State = {
   processing: boolean;
-  visible: boolean;
 };
 
 class ConnectForm extends React.Component<Props, State> {
   state: State = {
     processing: false,
-    visible: true,
-  };
-
-  handleClose = () => {
-    this.setState({
-      visible: false,
-    });
   };
 
   handleSubscribe = async () => {
@@ -48,12 +40,15 @@ class ConnectForm extends React.Component<Props, State> {
 
     try {
       const {
-        web3,
         config: { period, amount, accountTo, periodCount },
         form: { getFieldsValue },
       } = this.props;
 
       const tokenAddress = getFieldsValue().paymentMethod;
+
+      const web3 = await getWeb3();
+      const accounts = await web3.eth.getAccounts();
+      const account = accounts[0];
 
       const networkId = await web3.eth.net.getId();
       if (networkId !== 42) {
@@ -74,7 +69,7 @@ class ConnectForm extends React.Component<Props, State> {
           deployedNetwork.address,
           (Number(periodCount) * Number(amount)).toString()
         )
-        .send({ from: this.props.account });
+        .send({ from: account });
 
       const SubscriptionsContractInstance = new web3.eth.Contract(
         SubscriptionsContract.abi,
@@ -89,7 +84,7 @@ class ConnectForm extends React.Component<Props, State> {
           amount,
           periodCount
         )
-        .send({ from: this.props.account });
+        .send({ from: account });
 
       message.success("You successfully subscribed");
 
@@ -223,10 +218,8 @@ class ConnectForm extends React.Component<Props, State> {
   };
 
   renderModal = () => {
-    const { visible } = this.state;
-
     return (
-      <Modal visible={visible} onCancel={this.handleClose}>
+      <Modal visible destroyOnClose>
         {this.renderForm()}
       </Modal>
     );
