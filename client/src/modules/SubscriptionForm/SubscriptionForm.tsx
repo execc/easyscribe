@@ -130,12 +130,25 @@ class SubscriptionForm extends React.Component<Props, State> {
     const { account, web3 } = this.props;
 
     return (
+      <ConnectForm
+        account={account}
+        web3={web3}
+        config={this.getFormConfig()}
+      />
+    );
+  };
+
+  renderFormConnectScript = () => {
+    const config = this.getFormConfig();
+
+    return <div>easyscribe.open({JSON.stringify(config)})</div>;
+  };
+
+  renderForm = () => {
+    return (
       <div className="form-preview-wrapper">
-        <ConnectForm
-          account={account}
-          web3={web3}
-          config={this.getFormConfig()}
-        />
+        {this.renderFormPreview()}
+        {this.renderFormConnectScript()}
       </div>
     );
   };
@@ -145,7 +158,7 @@ class SubscriptionForm extends React.Component<Props, State> {
       <Content title="Connect service">
         <div className="form-configurator">
           {this.renderParamsForm()}
-          {this.renderFormPreview()}
+          {this.renderForm()}
         </div>
       </Content>
     );

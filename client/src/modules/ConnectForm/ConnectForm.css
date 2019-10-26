@@ -28,3 +28,15 @@
   text-align: center;
   padding-top: 10px;
 }
+
+.ant-modal-body {
+  padding: 0 !important;
+}
+
+.ant-modal-body .subscribe-form {
+  max-width: unset;
+}
+
+.ant-modal-footer {
+  display: none;
+}

@@ -1,4 +1,4 @@
-import { Button, Form, message, Select } from "antd";
+import { Button, Form, message, Modal, Select } from "antd";
 import { FormComponentProps } from "antd/es/form";
 import { OptionProps } from "antd/es/select";
 import React, { FormEvent } from "react";
@@ -19,17 +19,26 @@ type OwnProps = {
   web3: any;
   account: any;
   config: ConnectFormConfig;
+  modalMode?: boolean;
 };
 
 type Props = OwnProps & FormComponentProps;
 
 type State = {
   processing: boolean;
+  visible: boolean;
 };
 
 class ConnectForm extends React.Component<Props, State> {
   state: State = {
     processing: false,
+    visible: true,
+  };
+
+  handleClose = () => {
+    this.setState({
+      visible: false,
+    });
   };
 
   handleSubscribe = async () => {
@@ -181,7 +190,7 @@ class ConnectForm extends React.Component<Props, State> {
     );
   };
 
-  render() {
+  renderForm = () => {
     const { processing } = this.state;
 
     return (
@@ -203,7 +212,7 @@ class ConnectForm extends React.Component<Props, State> {
             You can cancel the subscription in any time and receive you money
             back!
             <br />
-            Manage you subscriptions on{" "}
+            Manage you subscriptions on&nbsp;
             <a href="http://127.0.0.1:3000/#/subscriptions">
               subscriptions panel
             </a>
@@ -211,6 +220,22 @@ class ConnectForm extends React.Component<Props, State> {
         </Form.Item>
       </Form>
     );
+  };
+
+  renderModal = () => {
+    const { visible } = this.state;
+
+    return (
+      <Modal visible={visible} onCancel={this.handleClose}>
+        {this.renderForm()}
+      </Modal>
+    );
+  };
+
+  render() {
+    const { modalMode } = this.props;
+
+    return modalMode ? this.renderModal() : this.renderForm();
   }
 }
 
