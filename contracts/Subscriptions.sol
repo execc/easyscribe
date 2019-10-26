@@ -33,7 +33,7 @@ contract Subscriptions {
     
     /// Event that a new subscription was created
     event SubsctiptionCreated(
-        bytes32 indexed _id,
+        uint256 indexed _id,
         address indexed _client,
         address indexed _provider,
         address _token,
@@ -43,14 +43,14 @@ contract Subscriptions {
     
     /// Event that a new subscription was canceled
     event SubsctiptionCanceled(
-        bytes32 indexed _id,
+        uint256 indexed _id,
         address indexed _client,
         address indexed _provider
     );
     
     /// Event that a subscription was payed
     event SubscriptionPayed(
-        bytes32 indexed _id,
+        uint256 indexed _id,
         address indexed _client,
         address indexed _provider,
         address _token,
@@ -58,13 +58,171 @@ contract Subscriptions {
     );
     
     /// All subscriptions in a system
-    mapping(bytes32 => Subscription) subscriptions;
+    mapping(uint256 => Subscription) subscriptions;
     
     /// Subscriptions of concrete user
-    mapping(address => bytes32[]) clients;
+    mapping(address => uint256[]) clients;
     
     /// Subscriptions of concrete provider
-    mapping(address => bytes32[]) providers;
+    mapping(address => uint256[]) providers;
+    
+    /// Approval mapping for selling
+    mapping(uint256 => address) approvals;
+    
+    /// List of subscriptions on sale
+    uint256[] selling;
+    
+    /// Mapping of selling items index
+    mapping(uint256 => uint256) selling_index;
+    
+    /// Mapping of selling item to price
+    mapping(uint256 => uint256) selling_price;
+    
+    /// This part implements part of ERC721 Token standard for subscriptions
+    /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    function balanceOf(address _owner) public view returns (uint256) {
+        return providers[_owner].length;
+    }
+    
+    function ownerOf(uint256 _tokenId) public view returns (address) {
+        return subscriptions[_tokenId].provider;
+    }
+    
+    function transferFrom(
+        address _from, 
+        address _to, 
+        uint256 _tokenId
+    ) private {
+        require(_to != _from);
+        require(_to != address(0));
+        
+        address provider = subscriptions[_tokenId].provider;
+        uint256 arrayLength = providers[provider].length;
+        for (uint256 i=0; i<arrayLength; i++) {
+            // TODO: Get rid of cycle dut to performance reasons
+            if (providers[provider][i] == _tokenId) {
+                providers[provider][i] = providers[provider][arrayLength - 1];
+                delete providers[provider][arrayLength - 1];
+                
+                break;
+            }  
+        }
+
+        subscriptions[_tokenId].provider = _to;
+        providers[_to].push(_tokenId);
+    }
+    
+    function approve(
+            address _to, 
+            uint256 _tokenId
+        ) public {
+        
+        require(ownerOf(_tokenId) == msg.sender);
+        approvals[_tokenId] = _to;
+    }
+    /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    /// End of ERC721 Tiken standard
+    
+
+    function sellingIndex(uint256 _token_id) public view returns (uint256) {
+        return selling_index[_token_id];
+    }
+    
+    function sellingPrice(uint256 _token_id) public view returns (uint256) {
+        return selling_price[_token_id];
+    }
+    
+    function sellingCount() public view returns (uint256) {
+        return selling.length;
+    }
+    
+    function getSellingSubscription(
+        uint256 _index
+    ) public view returns 
+    (
+        uint256,
+        address,
+        address,
+        address,
+        uint256,
+        uint256,
+        uint256,
+        bool,
+        uint256,
+        uint256
+    ) {
+        uint256 id = selling_index[_index];
+        Subscription memory subscription = subscriptions[id];
+        uint256 amount = 0;
+        if (!subscription.canceled) {
+            amount = getSubscriptionAmount(id);
+        }
+        return (
+            id,
+            subscription.client,
+            subscription.token,
+            subscription.provider,
+            subscription.time_unit,
+            subscription.tokens_per_time_unit,
+            subscription.last_payment_at,
+            subscription.canceled,
+            amount,
+            subscription.max_subscription_time
+        );
+    }
+
+    function removeFromSale(uint256 _token_id) internal {
+        uint256 index = selling_index[_token_id];
+        selling[index] = selling[selling.length - 1];
+        
+        delete selling[selling.length - 1];
+        delete selling_index[_token_id];
+        delete selling_price[_token_id];
+    }
+
+    function withdraw(
+        uint256 _token_id
+    ) public {
+        require(_token_id != 0);
+        require(ownerOf(_token_id) == msg.sender);
+
+        removeFromSale(_token_id);
+    }
+    
+    function sell(uint256 _token_id, uint256 _price) public {
+        require(_token_id != 0);
+        require(_price != 0);
+        require(subscriptions[_token_id].canceled != true);
+        require(ownerOf(_token_id) == msg.sender);
+        
+        selling_price[_token_id] = _price;
+        selling_index[_token_id] = selling.length;
+        selling.push(_token_id);
+    }
+    
+    function buy(uint256 _token_id) public {
+        require(_token_id != 0);
+        require(ownerOf(_token_id) != msg.sender);
+
+        executeSubscription(_token_id);
+
+        IERC20 token = IERC20(subscriptions[_token_id].token);
+        token.transferFrom(
+            msg.sender,
+            address(this),
+            selling_price[_token_id]
+        );
+        
+        token.transfer(subscriptions[_token_id].provider, selling_price[_token_id]);
+        
+        transferFrom(
+            subscriptions[_token_id].provider,
+            msg.sender,
+            _token_id
+        );
+
+        removeFromSale(_token_id);
+    }
     
     /// Creates new subscription
     function createSubscription(
@@ -73,7 +231,7 @@ contract Subscriptions {
         uint256 _time_uint,
         uint256 _tokens_per_time_unit,
         uint256 _max_subscription_time
-    ) public returns (bytes32) {
+    ) public returns (uint256) {
         
         // Checks on input data basic validity. Note, that 
         // there can be on-chain subscription terms registry
@@ -95,14 +253,14 @@ contract Subscriptions {
             amount
         );
         
-        bytes32 id = keccak256(abi.encodePacked(
+        uint256 id = uint256(keccak256(abi.encodePacked(
             msg.sender,
             _token,
             _provider,
             _time_uint,
             _tokens_per_time_unit,
             now
-        ));
+        )));
         
         Subscription memory subscription = Subscription(
             msg.sender,
@@ -133,7 +291,7 @@ contract Subscriptions {
     
     /// Cancels subscription
     function cancelSubscription(
-        bytes32 _id
+        uint256 _id
     ) public returns (bool) {
         
         require(subscriptions[_id].client == msg.sender);
@@ -152,7 +310,7 @@ contract Subscriptions {
     
     /// Executes subscriptions
     function executeSubscription(
-        bytes32 _id
+        uint256 _id
     ) public returns (bool) {
             
         require(subscriptions[_id].canceled == false);
@@ -177,7 +335,7 @@ contract Subscriptions {
     
     /// Computes how much provider can withdraw with conrete subscription
     function getSubscriptionAmount(
-        bytes32 _id
+        uint256 _id
     ) public view returns (uint256) {
         
         return getSubscriptionAmountForDate(_id, now);
@@ -185,7 +343,7 @@ contract Subscriptions {
     
         /// Computes how much provider can withdraw with conrete subscription
     function getSubscriptionAmountForDate(
-        bytes32 _id,
+        uint256 _id,
         uint256 _date
     ) public view returns (uint256) {
         
@@ -212,7 +370,7 @@ contract Subscriptions {
         uint256 _index
     ) public view returns 
     (
-        bytes32,
+        uint256,
         address,
         address,
         address,
@@ -220,9 +378,10 @@ contract Subscriptions {
         uint256,
         uint256,
         bool,
+        uint256,
         uint256
     ) {
-        bytes32 id = clients[_client][_index];
+        uint256 id = clients[_client][_index];
         Subscription memory subscription = subscriptions[id];
         uint256 amount = 0;
         if (!subscription.canceled) {
@@ -237,7 +396,8 @@ contract Subscriptions {
             subscription.tokens_per_time_unit,
             subscription.last_payment_at,
             subscription.canceled,
-            amount
+            amount,
+            subscription.max_subscription_time
         );
     }
     
@@ -252,7 +412,7 @@ contract Subscriptions {
         uint256 _index
     ) public view returns 
     (
-        bytes32,
+        uint256,
         address,
         address,
         address,
@@ -260,9 +420,10 @@ contract Subscriptions {
         uint256,
         uint256,
         bool,
+        uint256,
         uint256
     ) {
-        bytes32 id = providers[_provider][_index];
+        uint256 id = providers[_provider][_index];
         Subscription memory subscription = subscriptions[id];
         uint256 amount = 0;
         if (!subscription.canceled) {
@@ -277,7 +438,8 @@ contract Subscriptions {
             subscription.tokens_per_time_unit,
             subscription.last_payment_at,
             subscription.canceled,
-            amount
+            amount,
+            subscription.max_subscription_time
         );
     }
 }
