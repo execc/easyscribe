@@ -168,13 +168,23 @@ contract Subscriptions {
         bytes32 _id
     ) public view returns (uint256) {
         
+        return getSubscriptionAmountForDate(_id, now);
+    }
+    
+        /// Computes how much provider can withdraw with conrete subscription
+    function getSubscriptionAmountForDate(
+        bytes32 _id,
+        uint256 _date
+    ) public view returns (uint256) {
+        
+        require(_date > subscriptions[_id].last_payment_at);
         require(subscriptions[_id].canceled == false);
         
         uint256 time_unit = subscriptions[_id].time_unit;
         uint256 tokens_per_time_unit = subscriptions[_id].tokens_per_time_unit;
         uint256 last_payment_at = subscriptions[_id].last_payment_at;
         
-        uint256 periods = (now - last_payment_at) / time_unit;
+        uint256 periods = (_date - last_payment_at) / time_unit;
         
         return periods * tokens_per_time_unit;
     }
