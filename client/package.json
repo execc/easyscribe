@@ -8,12 +8,14 @@
     "@types/node": "12.11.7",
     "@types/react": "16.9.11",
     "@types/react-dom": "16.9.3",
+    "@types/react-router": "5.1.2",
     "react": "16.11.0",
     "react-dom": "16.11.0",
     "react-scripts": "3.2.0",
     "web3": "1.2.2",
     "typescript": "3.6.4",
-    "antd": "3.24.2"
+    "antd": "3.24.2",
+    "react-router": "5.1.2"
   },
   "scripts": {
     "start": "react-scripts start",

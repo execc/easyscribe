@@ -1,6 +1,9 @@
 import { message, Spin } from "antd";
 import React, { Component } from "react";
+import { Route, Router, Switch } from "react-router";
+import { Subscriptions } from "./modules/Subscriptions/Subscriptions";
 import getWeb3 from "./utils/getWeb3";
+import { createHashHistory } from "history";
 
 import "./App.css";
 import "antd/dist/antd.css";
@@ -8,6 +11,8 @@ import "antd/dist/antd.css";
 type State = {
   account: any;
 };
+
+const history = createHashHistory();
 
 class App extends Component<{}, State> {
   web3: any;
@@ -42,12 +47,20 @@ class App extends Component<{}, State> {
     const { account } = this.state;
 
     if (!account) {
-      return <div className="spin-wrapper">
-        <Spin size="large"/>
-      </div>;
+      return (
+        <div className="spin-wrapper">
+          <Spin size="large" />
+        </div>
+      );
     }
 
-    return <div className="App">hallo</div>;
+    return (
+      <Router history={history}>
+        <Switch>
+          <Route component={Subscriptions} />
+        </Switch>
+      </Router>
+    );
   }
 }
 
