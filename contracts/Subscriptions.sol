@@ -24,6 +24,9 @@ contract Subscriptions {
         /// the timestamp when the last payment was made
         uint256 last_payment_at;
         
+        /// max subscription time
+        uint256 max_subscription_time;
+        
         /// if the subscription has been cancelled
         bool canceled;
     }
@@ -68,7 +71,8 @@ contract Subscriptions {
         address _token, 
         address _provider,
         uint256 _time_uint,
-        uint256 _tokens_per_time_unit
+        uint256 _tokens_per_time_unit,
+        uint256 _max_subscription_time
     ) public returns (bytes32) {
         
         // Checks on input data basic validity. Note, that 
@@ -78,13 +82,26 @@ contract Subscriptions {
         require(_provider != address(0));
         require(_time_uint > 0);
         require(_tokens_per_time_unit > 0);
+        require(_max_subscription_time > 0);
+        
+        uint256 amount = _tokens_per_time_unit * _max_subscription_time;
+        
+        // Accept payment right away
+        //
+        IERC20 token = IERC20(_token);
+        token.transferFrom(
+            msg.sender,
+            address(this),
+            amount
+        );
         
         bytes32 id = keccak256(abi.encodePacked(
             msg.sender,
             _token,
             _provider,
             _time_uint,
-            _tokens_per_time_unit
+            _tokens_per_time_unit,
+            now
         ));
         
         Subscription memory subscription = Subscription(
@@ -94,6 +111,7 @@ contract Subscriptions {
             _time_uint,
             _tokens_per_time_unit,
             now,
+            _max_subscription_time,
             false
         );
         
@@ -144,12 +162,6 @@ contract Subscriptions {
         subscriptions[_id].last_payment_at = now;
         
         IERC20 token = IERC20(subscriptions[_id].token);
-        token.transferFrom(
-            subscriptions[_id].client,
-            address(this),
-            amount
-        );
-        
         token.transfer(subscriptions[_id].provider, amount);
         
         emit SubscriptionPayed(
