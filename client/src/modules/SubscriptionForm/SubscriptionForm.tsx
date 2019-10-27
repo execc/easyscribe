@@ -1,8 +1,8 @@
 import { Button, Form, Input, InputNumber, message, Select } from "antd";
 import { FormComponentProps } from "antd/es/form";
-import { OptionProps } from "antd/es/select";
 import React from "react";
 import { Content } from "../../core/layout/Content";
+import {paymentMethodOptions} from "../../core/subscriptions/consts";
 import { ConnectForm, ConnectFormConfig } from "../ConnectForm/ConnectForm";
 import ClipboardJS from "clipboard";
 
@@ -25,13 +25,6 @@ type State = {
 };
 
 type Props = OwnProps & FormComponentProps;
-
-const paymentMethodOptions: OptionProps[] = [
-  {
-    value: "0xc4375b7de8af5a38a93548eb8453a498222c4ff2",
-    title: "DAI",
-  },
-];
 
 class SubscriptionForm extends React.Component<Props, State> {
   state: State = {

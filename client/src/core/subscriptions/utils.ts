@@ -2,26 +2,36 @@ import Web3 from "web3";
 import { AbiItem } from "web3-utils";
 import IERC20Contract from "../../contracts/IERC20.json";
 import SubscriptionsContract from "../../contracts/Subscriptions.json";
-import { SubscriptionStatus } from "./consts";
+import { paymentMethodOptions, SubscriptionStatus } from "./consts";
 import { Subscription } from "./models";
 
 export const getMappedSubscriptions = (
   subscriptions: any[]
 ): Subscription[] => {
-  return subscriptions.map(subscription => ({
-    key: subscription[0],
-    id: subscription[0],
-    token: subscription[2],
-    receiverAddress: subscription[3],
-    period: subscription[4] / 60,
-    amount: subscription[5] / Math.pow(10, 18),
-    lastPayment: new Date(Number(subscription[6])),
-    status: subscription[7]
-      ? SubscriptionStatus.INACTIVE
-      : SubscriptionStatus.ACTIVE,
-    periodCount: subscription[9],
-    restAmount: subscription[10] / Math.pow(10, 18),
-  }));
+  return subscriptions.map(subscription => {
+    console.log(paymentMethodOptions, subscription[2]);
+    const tokenOption = paymentMethodOptions.find(
+      option =>
+        (option.value as string).toLocaleLowerCase() ===
+        subscription[2].toLocaleLowerCase()
+    );
+
+    return {
+      key: subscription[0],
+      id: subscription[0],
+      token: subscription[2],
+      tokenName: tokenOption ? tokenOption.title : undefined,
+      receiverAddress: subscription[3],
+      period: subscription[4] / 60,
+      amount: subscription[5] / Math.pow(10, 18),
+      lastPayment: new Date(Number(subscription[6])),
+      status: subscription[7]
+        ? SubscriptionStatus.INACTIVE
+        : SubscriptionStatus.ACTIVE,
+      periodCount: subscription[9],
+      restAmount: subscription[10] / Math.pow(10, 18),
+    };
+  });
 };
 
 export const getProviderSubscriptions = async (
