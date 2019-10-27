@@ -99,18 +99,18 @@ contract Subscriptions {
         address _from, 
         address _to, 
         uint256 _tokenId
-    ) private {
+    ) public {
         require(_to != _from);
         require(_to != address(0));
         
-        address provider = subscriptions[_tokenId].provider;
-        uint256 arrayLength = providers[provider].length;
+        uint256 arrayLength = providers[_from].length;
         for (uint256 i=0; i<arrayLength; i++) {
             // TODO: Get rid of cycle dut to performance reasons
-            if (providers[provider][i] == _tokenId) {
-                providers[provider][i] = providers[provider][arrayLength - 1];
-                delete providers[provider][arrayLength - 1];
-                providers[provider].length--;
+            if (providers[_from][i] == _tokenId) {
+                providers[_from][i] = providers[_from][arrayLength - 1];
+                
+                delete providers[_from][arrayLength - 1];
+                providers[_from].length--;
                 
                 break;
             }  
@@ -186,7 +186,15 @@ contract Subscriptions {
 
     function removeFromSale(uint256 _token_id) internal {
         uint256 index = selling_index[_token_id];
-        selling[index] = selling[selling.length - 1];
+        
+        // Take last element
+        uint256 movedElement = selling[selling.length - 1]; 
+        
+        // Move it in place of deleting element
+        selling[index] = movedElement;
+        
+        // Update index association
+        selling_index[movedElement] = index;
         
         delete selling[selling.length - 1];
         delete selling_index[_token_id];
