@@ -86,6 +86,7 @@ contract Subscriptions {
     
     /// This part implements part of ERC721 Token standard for subscriptions
     /// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    /// Part of ERC721 API. 
     function balanceOf(address _owner) public view returns (uint256) {
         return providers[_owner].length;
     }
@@ -343,12 +344,12 @@ contract Subscriptions {
         IERC20 token = IERC20(subscriptions[_id].token);
         token.transfer(subscriptions[_id].provider, amount);
         
+        subscriptions[_id].amount = subscriptions[_id].amount - amount;
+        subscriptions[_id].last_payment_at = now;
+        
         if (subscriptions[_id].amount == 0) {
             subscriptions[_id].canceled = true;
         }
-        
-        subscriptions[_id].amount = subscriptions[_id].amount - amount;
-        subscriptions[_id].last_payment_at = now;
         
         emit SubscriptionPayed(
             _id,
