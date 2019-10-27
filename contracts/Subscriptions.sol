@@ -381,16 +381,9 @@ contract Subscriptions {
         uint256 time_unit = subscriptions[_id].time_unit;
         uint256 tokens_per_time_unit = subscriptions[_id].tokens_per_time_unit;
         uint256 last_payment_at = subscriptions[_id].last_payment_at;
-        uint256 max_subscription_time = subscriptions[_id].max_subscription_time;
-        uint256 subscription_time = subscriptions[_id].subscription_time;
         uint256 remaning = subscriptions[_id].amount;
         
-        uint256 max_date = subscription_time + max_subscription_time * time_unit;
-        uint256 effective_date = _date;
-        if (effective_date > max_date) {
-            effective_date = max_date;
-        }
-        uint256 periods =  (effective_date - last_payment_at) / time_unit;
+        uint256 periods =  (_date - last_payment_at) / time_unit;
         
         uint256 amount = periods * tokens_per_time_unit;
         if (amount > remaning) {
