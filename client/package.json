@@ -10,6 +10,7 @@
     "@types/react": "16.9.11",
     "@types/react-dom": "16.9.3",
     "@types/react-router": "5.1.2",
+    "@types/react-router-dom": "5.1.0",
     "react": "16.11.0",
     "react-dom": "16.11.0",
     "react-scripts": "3.2.0",
@@ -17,6 +18,7 @@
     "typescript": "3.6.4",
     "antd": "3.24.2",
     "react-router": "5.1.2",
+    "react-router-dom": "5.1.2",
     "date-fns": "2.6.0",
     "clipboard": "2.0.4"
   },
