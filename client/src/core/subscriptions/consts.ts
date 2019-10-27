@@ -13,3 +13,9 @@ export enum ProviderSubscriptionsTab {
   INACTIVE = "Inactive",
   ON_SALE = "On sale",
 }
+
+export enum MarketSubscriptionsTab {
+  ACTIVE = "Active",
+  INACTIVE = "Inactive",
+  MY_LOTS = "My lots",
+}
