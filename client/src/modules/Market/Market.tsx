@@ -153,7 +153,7 @@ export class Market extends Component<Props, State> {
     const { account } = this.props;
 
     return subscriptions.filter(({ status, receiverAddress }: Subscription) => {
-      const isMyLot = account === receiverAddress;
+      const isMyLot = account.toLocaleLowerCase() === receiverAddress.toLocaleLowerCase();
 
       switch (tab) {
         case MarketSubscriptionsTab.ACTIVE:
@@ -241,7 +241,7 @@ export class Market extends Component<Props, State> {
     const { account } = this.props;
 
     const waiting = waitingSubscriptionIds.includes(id);
-    const isMyLot = account === receiverAddress;
+    const isMyLot = account.toLocaleLowerCase() === receiverAddress.toLocaleLowerCase();
 
     if (status === SubscriptionStatus.ACTIVE && !isMyLot) {
       return (
