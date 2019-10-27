@@ -106,6 +106,7 @@ contract Subscriptions {
             if (providers[provider][i] == _tokenId) {
                 providers[provider][i] = providers[provider][arrayLength - 1];
                 delete providers[provider][arrayLength - 1];
+                providers[provider].length--;
                 
                 break;
             }  
@@ -153,9 +154,11 @@ contract Subscriptions {
         bool,
         uint256,
         uint256,
+        uint256,
         uint256
     ) {
-        uint256 id = selling[selling_index[_index]];
+        uint256 index = selling_index[_index];
+        uint256 id = selling[index];
         Subscription memory subscription = subscriptions[id];
         uint256 amount = 0;
         if (!subscription.canceled) {
@@ -172,7 +175,8 @@ contract Subscriptions {
             subscription.canceled,
             amount,
             subscription.max_subscription_time,
-            selling_price[id]
+            selling_price[id],
+            subscription.subscription_time
         );
     }
 
@@ -394,6 +398,7 @@ contract Subscriptions {
         uint256,
         bool,
         uint256,
+        uint256,
         uint256
     ) {
         uint256 id = clients[_client][_index];
@@ -412,7 +417,8 @@ contract Subscriptions {
             subscription.last_payment_at,
             subscription.canceled,
             amount,
-            subscription.max_subscription_time
+            subscription.max_subscription_time,
+            subscription.subscription_time
         );
     }
     
@@ -436,6 +442,7 @@ contract Subscriptions {
         uint256,
         bool,
         uint256,
+        uint256,
         uint256
     ) {
         uint256 id = providers[_provider][_index];
@@ -454,7 +461,8 @@ contract Subscriptions {
             subscription.last_payment_at,
             subscription.canceled,
             amount,
-            subscription.max_subscription_time
+            subscription.max_subscription_time,
+            subscription.subscription_time
         );
     }
 }

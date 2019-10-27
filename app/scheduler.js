@@ -43,6 +43,7 @@ async function poll() {
             .getProviderSubscription(KVN_PROV_ADDR, i)
             .call({from: KVN_PROV_ADDR});
 
+        console.log(`[DEBUG] ${JSON.stringify(providerSubscription)}`)
         const id = providerSubscription[0];
         const isCancelled = providerSubscription[7];
 
@@ -50,10 +51,12 @@ async function poll() {
             continue;
         }
 
+        console.log(`Handling ${id}`)
+
         const amount = await instance.methods
             .getSubscriptionAmount(id)
             .call({from: KVN_PROV_ADDR});
-
+        
         if (amount > 0) {
             console.log(`= Collecting payment ${ amount } for ${ id }`);
 
@@ -89,4 +92,6 @@ async function poll() {
 }
 
 
-setInterval(poll, 30000);
+// setInterval(poll, 30000);
+
+poll();
