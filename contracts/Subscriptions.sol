@@ -344,6 +344,10 @@ contract Subscriptions {
         subscriptions[_id].amount = subscriptions[_id].amount - amount;
         token.transfer(subscriptions[_id].provider, amount);
         
+        if (subscriptions[_id].amount == 0) {
+            subscriptions[_id].canceled = true;
+        }
+        
         emit SubscriptionPayed(
             _id,
             subscriptions[_id].client,
