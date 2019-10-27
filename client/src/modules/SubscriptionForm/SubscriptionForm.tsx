@@ -1,11 +1,19 @@
-import { Form, Input, InputNumber, Select } from "antd";
+import { Button, Form, Input, InputNumber, message, Select } from "antd";
 import { FormComponentProps } from "antd/es/form";
 import { OptionProps } from "antd/es/select";
 import React from "react";
 import { Content } from "../../core/layout/Content";
 import { ConnectForm, ConnectFormConfig } from "../ConnectForm/ConnectForm";
+import ClipboardJS from "clipboard";
 
 import "./SubscriptionForm.css";
+
+const STYLES_SNIPPET =
+  '<link href="/static/css/2.aa7fcd32.chunk.css" rel="stylesheet" /><link href="/static/css/main.bb66403a.chunk.css" rel="stylesheet" />';
+const SCRIPTS_SNIPPET =
+  '<script src="/static/js/2.b8bd4959.chunk.js"></script><script src="/static/js/main.adc8c6f7.chunk.js"></script>';
+const INIT_SNIPPET =
+  '<button onclick=\'window.easyscribe.open({amount:"10000000000000000",period:"60",periodCount:"2",paymentMethods:[{value:"0xc4375b7de8af5a38a93548eb8453a498222c4ff2",title:"DIA"}],accountTo:"0x8D933D915Ae4f74D1b5BA32466c5676F2E15E5A1"})\'>Take my money</button>';
 
 type OwnProps = {
   account: any;
@@ -29,6 +37,10 @@ class SubscriptionForm extends React.Component<Props, State> {
   state: State = {
     isParamsValid: false,
   };
+
+  componentDidMount() {
+    new ClipboardJS(".btn");
+  }
 
   handleFormChange = () => {
     const { form } = this.props;
@@ -115,26 +127,93 @@ class SubscriptionForm extends React.Component<Props, State> {
 
   renderParamsForm = () => {
     return (
-      <Form onChange={this.handleFormChange} className="subscription-form">
-        {this.renderPeriod()}
-        {this.renderPeriodCount()}
-        {this.renderPrice()}
-        {this.renderPaymentMethod()}
-      </Form>
+      <div className="form-params-wrapper">
+        <Form onChange={this.handleFormChange} className="subscription-form">
+          {this.renderPeriod()}
+          {this.renderPeriodCount()}
+          {this.renderPrice()}
+          {this.renderPaymentMethod()}
+        </Form>
+      </div>
+    );
+  };
+
+  renderFormPreview = () => {
+    const { account, web3 } = this.props;
+
+    return (
+      <ConnectForm
+        account={account}
+        web3={web3}
+        config={this.getFormConfig()}
+      />
+    );
+  };
+
+  renderSuccessCopyMessage = () => message.success("Copied!");
+
+  renderStyleBlock = () => {
+    return (
+      <Button
+        className="btn"
+        data-clipboard-text={STYLES_SNIPPET}
+        onClick={this.renderSuccessCopyMessage}
+      >
+        Copy styles
+      </Button>
+    );
+  };
+
+  renderScriptBlock = () => {
+    return (
+      <Button
+        className="btn"
+        data-clipboard-text={SCRIPTS_SNIPPET}
+        onClick={this.renderSuccessCopyMessage}
+      >
+        Copy scripts
+      </Button>
+    );
+  };
+
+  renderInitBlock = () => {
+    return (
+      <Button
+        className="btn"
+        data-clipboard-text={INIT_SNIPPET}
+        onClick={this.renderSuccessCopyMessage}
+      >
+        Copy init script
+      </Button>
+    );
+  };
+
+  renderFormConnectScript = () => {
+    return (
+      <div className="connect-block">
+        {this.renderStyleBlock()}
+        {this.renderScriptBlock()}
+        {this.renderInitBlock()}
+      </div>
+    );
+  };
+
+  renderForm = () => {
+    return (
+      <div className="form-preview-wrapper">
+        {this.renderFormPreview()}
+        {this.renderFormConnectScript()}
+      </div>
     );
   };
 
   render() {
-    const { account, web3 } = this.props;
-
     return (
       <Content title="Connect service">
-        {this.renderParamsForm()}
-        <ConnectForm
-          account={account}
-          web3={web3}
-          config={this.getFormConfig()}
-        />
+        <div className="form-configurator">
+          {this.renderParamsForm()}
+          {this.renderForm()}
+        </div>
       </Content>
     );
   }

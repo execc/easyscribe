@@ -1,3 +1,33 @@
 .subscription-form {
-  max-width: 300px;
+  min-width: 100%;
+}
+
+.subscription-form .ant-input-number {
+  width: 100%;
+}
+
+.form-configurator {
+  display: flex;
+}
+
+.form-configurator .form-params-wrapper {
+  width: 50%;
+  padding: 10px;
+}
+
+.form-configurator .form-preview-wrapper {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.connect-block {
+  display: flex;
+  padding-top: 20px;
+}
+
+.connect-block .btn {
+  margin-right: 10px;
 }

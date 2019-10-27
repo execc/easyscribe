@@ -1,15 +1,18 @@
 import { message, Table, Tabs, Button, Tag } from "antd";
 import React, { Component } from "react";
 import { Content } from "../../core/layout/Content";
-import SubscriptionsContract from "../../contracts/Subscriptions.json";
-import { format } from "date-fns";
 
-import "./Subscriptions.css";
+import "./Market.css";
 import {
   SubscriptionsTab,
   SubscriptionStatus,
 } from "../../core/subscriptions/consts";
-import { getMappedSubscriptions } from "../../core/subscriptions/utils";
+import { Subscription } from "../../core/subscriptions/models";
+import {
+  buySubscription,
+  getSellingSubscriptions,
+  approve,
+} from "../../core/subscriptions/utils";
 
 const { TabPane } = Tabs;
 
@@ -29,7 +32,7 @@ type State = {
   waitingSubscriptionIds: string[];
 };
 
-export class Subscriptions extends Component<Props, State> {
+export class Market extends Component<Props, State> {
   subscriptionsUpdateTimeout: any;
   waitingSubscriptionIntervals: any = {};
 
@@ -78,46 +81,19 @@ export class Subscriptions extends Component<Props, State> {
     });
 
     try {
-      const { web3 } = this.props;
+      const { web3, account } = this.props;
 
-      const networkId = await web3.eth.net.getId();
-      if (networkId !== 42) {
-        throw new Error(`networkId: ${networkId}`);
-      }
-
-      const deployedNetwork = (SubscriptionsContract.networks as any)[
-        networkId
-      ];
-      const contract = new web3.eth.Contract(
-        SubscriptionsContract.abi,
-        deployedNetwork && deployedNetwork.address
-      );
-
-      const count = await contract.methods
-        .getClientSubscriptionCount(this.props.account)
-        .call({ from: this.props.account });
-
-      const getSubscriptionRequests = [];
-      for (let i = 0; i < count; i++) {
-        getSubscriptionRequests.push(
-          contract.methods
-            .getClientSubscription(this.props.account, i)
-            .call({ from: this.props.account })
-        );
-      }
-
-      const subscriptions = await Promise.all(getSubscriptionRequests);
-      const mapedSubscriptions = getMappedSubscriptions(subscriptions);
+      const newSubscriptions = await getSellingSubscriptions(web3, account);
 
       this.setState({
-        subscriptions: mapedSubscriptions,
+        subscriptions: newSubscriptions,
         subscriptionsLoading: withLoading
           ? false
           : this.state.subscriptionsLoading,
         waitingSubscriptionIds: this.state.waitingSubscriptionIds.filter(
           (id: string) => {
-            const newSub = mapedSubscriptions.find(
-              subscription => subscription.id === id
+            const newSub = newSubscriptions.find(
+              (subscription: Subscription) => subscription.id === id
             );
             const oldSub = this.state.subscriptions.find(
               subscription => subscription.id === id
@@ -161,9 +137,8 @@ export class Subscriptions extends Component<Props, State> {
       dataIndex: "periodCount",
     },
     {
-      title: "Last payment",
-      dataIndex: "lastPayment",
-      render: (date: Date) => format(date, "dd.MM.yyyy HH:mm"),
+      title: "Total sum",
+      render: (record: any) => record.amount * record.periodCount,
     },
     {
       title: "Actions",
@@ -200,30 +175,27 @@ export class Subscriptions extends Component<Props, State> {
     });
   };
 
-  handleCancelFactory = (id: string) => async () => {
+  handleBuyFactory = (id: string) => async () => {
     try {
       this.addWaitingId(id);
 
-      const { web3 } = this.props;
+      const { web3, account } = this.props;
+      const { subscriptions } = this.state;
 
-      const networkId = await web3.eth.net.getId();
-      if (networkId !== 42) {
-        throw new Error(`networkId: ${networkId}`);
-      }
-
-      const deployedNetwork = (SubscriptionsContract.networks as any)[
-        networkId
-      ];
-      const contract = new web3.eth.Contract(
-        SubscriptionsContract.abi,
-        deployedNetwork && deployedNetwork.address
+      const { token, periodCount, amount } = subscriptions.find(
+        (subscription: Subscription) => subscription.id === id
       );
 
-      await contract.methods
-        .cancelSubscription(id)
-        .send({ from: this.props.account });
+      await approve(
+        web3,
+        account,
+        token,
+        (Number(periodCount) * Number(amount) * Math.pow(10, 18)).toString()
+      );
+      await buySubscription(web3, account, id);
     } catch (error) {
-      message.error("Произошла ошибка при отмене подписки");
+      this.clearWaitingIntervals([id]);
+      message.error("Buying ends with error");
       console.error(error);
     }
   };
@@ -251,9 +223,9 @@ export class Subscriptions extends Component<Props, State> {
           type="ghost"
           disabled={waiting}
           loading={waiting}
-          onClick={this.handleCancelFactory(record.id)}
+          onClick={this.handleBuyFactory(record.id)}
         >
-          Cancel
+          Buy
         </Button>
       );
     }
@@ -294,7 +266,7 @@ export class Subscriptions extends Component<Props, State> {
 
   render() {
     return (
-      <Content title="Subscriptions">
+      <Content title="Market">
         {this.renderTabs()}
         {this.renderTable()}
       </Content>

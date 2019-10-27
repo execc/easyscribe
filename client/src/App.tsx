@@ -1,6 +1,9 @@
 import { message, Spin } from "antd";
 import React, { Component } from "react";
 import { Route, Router, Switch } from "react-router";
+import { Layout } from "./core/layout/layout/Layout";
+import { Market } from "./modules/Market/Market";
+import { ProviderSubscribers } from "./modules/ProviderSubscribers/ProviderSubscribers";
 import { SubscriptionForm } from "./modules/SubscriptionForm/SubscriptionForm";
 import { Subscriptions } from "./modules/Subscriptions/Subscriptions";
 import getWeb3 from "./utils/getWeb3";
@@ -57,21 +60,33 @@ class App extends Component<{}, State> {
 
     return (
       <Router history={history}>
-        <Switch>
-          <Route
-            path="/subscriptions"
-            component={() => (
-              <Subscriptions account={account} web3={this.web3} />
-            )}
-          />
-          <Route
-            path="/connect-form"
-            component={() => (
-              <SubscriptionForm account={account} web3={this.web3} />
-            )}
-          />
-          <Route component={() => <div>404</div>} />
-        </Switch>
+        <Layout>
+          <Switch>
+            <Route
+              path="/subscriptions"
+              component={() => (
+                <Subscriptions account={account} web3={this.web3} />
+              )}
+            />
+            <Route
+              path="/subscribers"
+              component={() => (
+                <ProviderSubscribers account={account} web3={this.web3} />
+              )}
+            />
+            <Route
+              path="/market"
+              component={() => <Market account={account} web3={this.web3} />}
+            />
+            <Route
+              path="/connect-form"
+              component={() => (
+                <SubscriptionForm account={account} web3={this.web3} />
+              )}
+            />
+            <Route component={() => <div>404</div>} />
+          </Switch>
+        </Layout>
       </Router>
     );
   }

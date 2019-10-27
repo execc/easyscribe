@@ -1,0 +1,8 @@
+.ant-layout {
+  background: #fff !important;
+  min-height: 100vh !important;
+}
+
+.ant-layout-sider {
+  border-right: 1px solid #f0f2f5 !important;
+}
