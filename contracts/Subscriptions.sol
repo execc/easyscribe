@@ -183,6 +183,8 @@ contract Subscriptions {
         delete selling[selling.length - 1];
         delete selling_index[_token_id];
         delete selling_price[_token_id];
+        
+        selling.length--;
     }
 
     function withdraw(
