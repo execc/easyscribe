@@ -4,7 +4,6 @@ import { OptionProps } from "antd/es/select";
 import React, { FormEvent } from "react";
 
 import "./ConnectForm.css";
-import "antd/dist/antd.css";
 import SubscriptionsContract from "../../contracts/Subscriptions.json";
 import IERC20Contract from "../../contracts/IERC20.json";
 import getWeb3 from "../../utils/getWeb3";
@@ -20,6 +19,8 @@ export type ConnectFormConfig = {
 type OwnProps = {
   config: ConnectFormConfig;
   modalMode?: boolean;
+  visible?: boolean;
+  onClose?: () => void;
 };
 
 type Props = OwnProps & FormComponentProps;
@@ -218,8 +219,10 @@ class ConnectForm extends React.Component<Props, State> {
   };
 
   renderModal = () => {
+    const { visible, onClose } = this.props;
+
     return (
-      <Modal visible destroyOnClose>
+      <Modal visible={visible} destroyOnClose onCancel={onClose}>
         {this.renderForm()}
       </Modal>
     );

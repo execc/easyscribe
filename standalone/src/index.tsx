@@ -1,17 +1,9 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import {
-  ConnectForm,
-  ConnectFormConfig,
-} from "./modules/ConnectForm/ConnectForm";
+import { ConnectFormWrapper } from "./modules/ConnectForm/ConnectFormWrapper";
+import "antd/dist/antd.css";
 
-const open = (config: ConnectFormConfig) => {
-  ReactDOM.render(
-    <ConnectForm config={config} modalMode />,
-    document.getElementById("easyscribe-root")
-  );
-};
-
-(window as any).easyscribe = {
-  open,
-};
+ReactDOM.render(
+  <ConnectFormWrapper />,
+  document.getElementById("easyscribe-root")
+);
