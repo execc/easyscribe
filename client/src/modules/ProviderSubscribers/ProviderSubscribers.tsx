@@ -148,7 +148,7 @@ export class ProviderSubscribers extends Component<Props, State> {
     {
       title: "Period",
       dataIndex: "period",
-      render: (period: string) => `${period} min`
+      render: (period: string) => `${period} min`,
     },
     {
       title: "Period count",
@@ -217,8 +217,12 @@ export class ProviderSubscribers extends Component<Props, State> {
         deployedNetwork && deployedNetwork.address
       );
 
+      const subscription: Subscription = this.state.subscriptions.find(
+        (subscription: Subscription) => subscription.id === id
+      );
+
       await contract.methods
-        .sell(id, (0.01 * Math.pow(10, 18)).toString())
+        .sell(id, ((subscription.restAmount / 2) * Math.pow(10, 18)).toString())
         .send({ from: this.props.account });
     } catch (error) {
       this.clearWaitingIntervals([id]);

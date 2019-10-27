@@ -10,7 +10,7 @@ class CustomLayout extends React.Component {
     return [
       {
         value: "subscriptions",
-        title: "Subscriptions",
+        title: "My subscriptions",
         icon: "container",
       },
       {

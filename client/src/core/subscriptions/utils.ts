@@ -20,6 +20,13 @@ export const getMappedSubscriptions = (
     );
     const receiverAddress = subscription[3].toLocaleLowerCase();
 
+    let sellingPrice = subscription[10];
+    let restAmount = subscription[11];
+    // костыль на продажу
+    if (typeof restAmount === "undefined") {
+      restAmount = subscription[10];
+    }
+
     return {
       key: subscription[0],
       id: subscription[0],
@@ -29,12 +36,13 @@ export const getMappedSubscriptions = (
       serviceName: getServiceNames(receiverAddress),
       period: subscription[4] / 60,
       amount: subscription[5] / Math.pow(10, 18),
-      lastPayment: new Date(Number(subscription[6])),
+      lastPayment: new Date(Number(subscription[6]) * 1000),
       status: subscription[7]
         ? SubscriptionStatus.INACTIVE
         : SubscriptionStatus.ACTIVE,
       periodCount: subscription[9],
-      restAmount: Number((subscription[10] / Math.pow(10, 18)).toFixed(2)),
+      restAmount: restAmount ? Number((restAmount / Math.pow(10, 18)).toFixed(2)) : 0,
+      sellingPrice: sellingPrice ? Number((sellingPrice / Math.pow(10, 18)).toFixed(2)) : undefined
     };
   });
 };
@@ -86,7 +94,9 @@ export const getSellingSubscriptions = async (
     deployedNetwork && deployedNetwork.address
   );
 
+  console.log("get selling count init");
   const count = await contract.methods.sellingCount().call({ from: account });
+  console.log("get selling count done", count);
   const getSubscriptionRequests = [];
   for (let i = 0; i < count; i++) {
     getSubscriptionRequests.push(
@@ -94,7 +104,9 @@ export const getSellingSubscriptions = async (
     );
   }
 
+  console.log("get selling init");
   const subscriptions = await Promise.all(getSubscriptionRequests);
+  console.log("get selling count done");
   return getMappedSubscriptions(subscriptions);
 };
 
