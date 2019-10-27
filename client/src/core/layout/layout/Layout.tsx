@@ -1,6 +1,6 @@
 import { Layout, Menu, Icon } from "antd";
 import React from "react";
-import {Link} from "react-router-dom";
+import { Link } from "react-router-dom";
 import "./Layout.css";
 
 const { Sider, Content } = Layout;
@@ -22,6 +22,11 @@ class CustomLayout extends React.Component {
         value: "market",
         title: "Market",
         icon: "shopping-cart",
+      },
+      {
+        value: "connect-form",
+        title: "Connect form",
+        icon: "credit-card",
       },
     ];
   };
