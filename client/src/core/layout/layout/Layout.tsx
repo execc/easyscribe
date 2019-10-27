@@ -31,7 +31,7 @@ class CustomLayout extends React.Component {
       <Sider width={200} style={{ background: "#fff" }}>
         <Menu
           mode="inline"
-          defaultSelectedKeys={[location.hash.substr(2)]}
+          defaultSelectedKeys={[window.location.hash.substr(2)]}
           style={{ height: "100%", borderRight: 0 }}
         >
           {this.getMenuConfig().map(menuItem => (
