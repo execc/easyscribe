@@ -10,4 +10,5 @@ export type Subscription = {
     amount: number; // В долларах
     lastPayment: Date;
     status: SubscriptionStatus;
+    isSelling?: boolean;
 };

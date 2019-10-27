@@ -1,14 +1,19 @@
-import { message, Table, Tabs, Button, Tag } from "antd";
+import { Button, message, Table, Tabs, Tag } from "antd";
 import React, { Component } from "react";
-import { Content } from "../../core/layout/Content";
 import SubscriptionsContract from "../../contracts/Subscriptions.json";
-
-import "./ProviderSubscribers.css";
+import { Content } from "../../core/layout/Content";
 import {
-  SubscriptionsTab,
+  ProviderSubscriptionsTab,
   SubscriptionStatus,
 } from "../../core/subscriptions/consts";
-import { getMappedSubscriptions } from "../../core/subscriptions/utils";
+import { Subscription } from "../../core/subscriptions/models";
+import {
+  concatWithSelling,
+  getProviderSubscriptions,
+  getSellingSubscriptions,
+} from "../../core/subscriptions/utils";
+
+import "./ProviderSubscribers.css";
 
 const { TabPane } = Tabs;
 
@@ -22,7 +27,7 @@ type Props = {
 
 type State = {
   contract: any;
-  tab: SubscriptionsTab;
+  tab: ProviderSubscriptionsTab;
   subscriptions: any[];
   subscribersLoading: boolean;
   waitingSubscribersIds: string[];
@@ -34,7 +39,7 @@ export class ProviderSubscribers extends Component<Props, State> {
 
   state: State = {
     contract: null,
-    tab: SubscriptionsTab.ACTIVE,
+    tab: ProviderSubscriptionsTab.ACTIVE,
     subscriptions: [],
     subscribersLoading: false,
     waitingSubscribersIds: [],
@@ -75,44 +80,25 @@ export class ProviderSubscribers extends Component<Props, State> {
     });
 
     try {
-      const { web3 } = this.props;
-
-      const networkId = await web3.eth.net.getId();
-      if (networkId !== 42) {
-        throw new Error(`networkId: ${networkId}`);
-      }
-
-      const deployedNetwork = (SubscriptionsContract.networks as any)[
-        networkId
-      ];
-      const contract = new web3.eth.Contract(
-        SubscriptionsContract.abi,
-        deployedNetwork && deployedNetwork.address
+      const { web3, account } = this.props;
+      const sellingSubscriptions = await getSellingSubscriptions(web3, account);
+      const providerSubscriptions = await getProviderSubscriptions(
+        web3,
+        account
       );
 
-      const count = await contract.methods
-        .getProviderSubscriptionCount(this.props.account)
-        .call({ from: this.props.account });
-
-      const getSubscriptionRequests = [];
-      for (let i = 0; i < count; i++) {
-        getSubscriptionRequests.push(
-          contract.methods
-            .getProviderSubscription(this.props.account, i)
-            .call({ from: this.props.account })
-        );
-      }
-
-      const subscriptions = await Promise.all(getSubscriptionRequests);
-      const mapedSubscriptions = getMappedSubscriptions(subscriptions);
+      const newSubscriptions = concatWithSelling(
+        providerSubscriptions,
+        sellingSubscriptions
+      );
 
       this.setState({
-        subscriptions: mapedSubscriptions,
+        subscriptions: newSubscriptions,
         subscribersLoading: withLoading ? false : this.state.subscribersLoading,
         waitingSubscribersIds: this.state.waitingSubscribersIds.filter(
           (id: string) => {
-            const newSub = mapedSubscriptions.find(
-              subscription => subscription.id === id
+            const newSub = newSubscriptions.find(
+              (subscription: Subscription) => subscription.id === id
             );
             const oldSub = this.state.subscriptions.find(
               subscription => subscription.id === id
@@ -166,10 +152,15 @@ export class ProviderSubscribers extends Component<Props, State> {
   getTableData = () => {
     const { subscriptions, tab } = this.state;
 
-    return subscriptions.filter(({ status }: any) => {
-      return tab === SubscriptionsTab.ACTIVE
-        ? status === SubscriptionStatus.ACTIVE
-        : status !== SubscriptionStatus.ACTIVE;
+    return subscriptions.filter(({ status, isSelling }: Subscription) => {
+      switch (tab) {
+        case ProviderSubscriptionsTab.ACTIVE:
+          return status === SubscriptionStatus.ACTIVE && !isSelling;
+        case ProviderSubscriptionsTab.INACTIVE:
+          return status === SubscriptionStatus.INACTIVE && !isSelling;
+        case ProviderSubscriptionsTab.ON_SALE:
+          return isSelling;
+      }
     });
   };
 
@@ -186,7 +177,7 @@ export class ProviderSubscribers extends Component<Props, State> {
     );
   };
 
-  handleOnTabChange = (tab: SubscriptionsTab) => {
+  handleOnTabChange = (tab: ProviderSubscriptionsTab) => {
     this.setState({
       tab,
     });
@@ -211,9 +202,9 @@ export class ProviderSubscribers extends Component<Props, State> {
         deployedNetwork && deployedNetwork.address
       );
 
-      await contract.methods.withdraw(id).send({ from: this.props.account });
-
-      await contract.methods.sell(id, "0.1").send({ from: this.props.account });
+      await contract.methods
+        .sell(id, (0.01 * Math.pow(10, 18)).toString())
+        .send({ from: this.props.account });
     } catch (error) {
       message.error("Sell ends with error");
       console.error(error);
@@ -231,13 +222,13 @@ export class ProviderSubscribers extends Component<Props, State> {
     }
   };
 
-  renderActions = (record: any) => {
-    const { id, status } = record;
+  renderActions = (record: Subscription) => {
+    const { id, status, isSelling } = record;
     const { waitingSubscribersIds } = this.state;
 
     const waiting = waitingSubscribersIds.includes(id);
 
-    if (status === SubscriptionStatus.ACTIVE) {
+    if (status === SubscriptionStatus.ACTIVE && !isSelling) {
       return (
         <Button
           type="ghost"
@@ -275,10 +266,17 @@ export class ProviderSubscribers extends Component<Props, State> {
 
     return (
       <Tabs activeKey={tab} onChange={this.handleOnTabChange as any}>
-        <TabPane tab={SubscriptionsTab.ACTIVE} key={SubscriptionsTab.ACTIVE} />
         <TabPane
-          tab={SubscriptionsTab.INACTIVE}
-          key={SubscriptionsTab.INACTIVE}
+          tab={ProviderSubscriptionsTab.ACTIVE}
+          key={ProviderSubscriptionsTab.ACTIVE}
+        />
+        <TabPane
+          tab={ProviderSubscriptionsTab.INACTIVE}
+          key={ProviderSubscriptionsTab.INACTIVE}
+        />
+        <TabPane
+          tab={ProviderSubscriptionsTab.ON_SALE}
+          key={ProviderSubscriptionsTab.ON_SALE}
         />
       </Tabs>
     );
