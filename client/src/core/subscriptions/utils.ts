@@ -9,7 +9,6 @@ export const getMappedSubscriptions = (
   subscriptions: any[]
 ): Subscription[] => {
   return subscriptions.map(subscription => {
-    console.log(paymentMethodOptions, subscription[2]);
     const tokenOption = paymentMethodOptions.find(
       option =>
         (option.value as string).toLocaleLowerCase() ===
@@ -29,7 +28,7 @@ export const getMappedSubscriptions = (
         ? SubscriptionStatus.INACTIVE
         : SubscriptionStatus.ACTIVE,
       periodCount: subscription[9],
-      restAmount: subscription[10] / Math.pow(10, 18),
+      restAmount: Number((subscription[10] / Math.pow(10, 18)).toFixed(2)),
     };
   });
 };
