@@ -149,9 +149,10 @@ contract Subscriptions {
         uint256,
         bool,
         uint256,
+        uint256,
         uint256
     ) {
-        uint256 id = selling_index[_index];
+        uint256 id = selling[selling_index[_index]];
         Subscription memory subscription = subscriptions[id];
         uint256 amount = 0;
         if (!subscription.canceled) {
@@ -167,7 +168,8 @@ contract Subscriptions {
             subscription.last_payment_at,
             subscription.canceled,
             amount,
-            subscription.max_subscription_time
+            subscription.max_subscription_time,
+            selling_price[id]
         );
     }
 
