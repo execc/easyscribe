@@ -6,6 +6,11 @@ const EthereumTx = require('ethereumjs-tx')
 
 const KVN_URL = "https://kovan.infura.io/v3/5b52483999bb42d6adb222571326568d"
 const KVN_PROV_ADDR = "0x8D933D915Ae4f74D1b5BA32466c5676F2E15E5A1"
+const KVN_PROV_ADDR2 = "0x5C614f3913a381cF74cBA2F55d57902EC60CC4F7"
+
+// TODO: Move to config
+const ADDRESSES = [KVN_PROV_ADDR, KVN_PROV_ADDR2];
+
 const networkId = 42
 
 const web3 = new Web3(KVN_URL)
@@ -30,20 +35,24 @@ console.log('=== Subscription collector started ===');
 console.log(`= Provider address: ${KVN_PROV_ADDR}`)
 console.log(`= Network ID: ${networkId}`)
 
+async function pollAll(addresses) {
+    addresses.forEach(async address => {
+        poll(address);
+    });
+}
 
-async function poll() {
+async function poll(address) {
     const count = await instance.methods
-        .getProviderSubscriptionCount(KVN_PROV_ADDR)
+        .getProviderSubscriptionCount(address)
         .call({from: KVN_PROV_ADDR});
 
     console.log(`= Found ${count} active subscriptions`);
 
     for (i = 0; i < count; i++) {
         const providerSubscription = await instance.methods
-            .getProviderSubscription(KVN_PROV_ADDR, i)
+            .getProviderSubscription(address, i)
             .call({from: KVN_PROV_ADDR});
 
-        console.log(`[DEBUG] ${JSON.stringify(providerSubscription)}`)
         const id = providerSubscription[0];
         const isCancelled = providerSubscription[7];
 
@@ -91,7 +100,4 @@ async function poll() {
     }
 }
 
-
-// setInterval(poll, 30000);
-
-poll();
+setInterval(() => pollAll(ADDRESSES), 30000);
