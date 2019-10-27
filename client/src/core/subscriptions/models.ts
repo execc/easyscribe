@@ -6,6 +6,7 @@ export type Subscription = {
   token: string;
   tokenName?: string;
   receiverAddress: string;
+  serviceName: string;
   period: number; // В минутах
   periodCount: number;
   amount: number; // В долларах

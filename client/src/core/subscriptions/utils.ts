@@ -2,7 +2,11 @@ import Web3 from "web3";
 import { AbiItem } from "web3-utils";
 import IERC20Contract from "../../contracts/IERC20.json";
 import SubscriptionsContract from "../../contracts/Subscriptions.json";
-import { paymentMethodOptions, SubscriptionStatus } from "./consts";
+import {
+  getServiceNames,
+  paymentMethodOptions,
+  SubscriptionStatus,
+} from "./consts";
 import { Subscription } from "./models";
 
 export const getMappedSubscriptions = (
@@ -14,13 +18,16 @@ export const getMappedSubscriptions = (
         (option.value as string).toLocaleLowerCase() ===
         subscription[2].toLocaleLowerCase()
     );
+    const receiverAddress = subscription[3].toLocaleLowerCase();
+    console.log(receiverAddress, getServiceNames(receiverAddress));
 
     return {
       key: subscription[0],
       id: subscription[0],
       token: subscription[2],
       tokenName: tokenOption ? tokenOption.title : undefined,
-      receiverAddress: subscription[3],
+      receiverAddress,
+      serviceName: getServiceNames(receiverAddress),
       period: subscription[4] / 60,
       amount: subscription[5] / Math.pow(10, 18),
       lastPayment: new Date(Number(subscription[6])),
