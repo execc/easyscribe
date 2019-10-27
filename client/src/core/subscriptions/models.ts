@@ -11,4 +11,5 @@ export type Subscription = {
     lastPayment: Date;
     status: SubscriptionStatus;
     isSelling?: boolean;
+    restAmount: number;
 };
