@@ -341,12 +341,14 @@ contract Subscriptions {
         subscriptions[_id].last_payment_at = now;
         
         IERC20 token = IERC20(subscriptions[_id].token);
-        subscriptions[_id].amount = subscriptions[_id].amount - amount;
         token.transfer(subscriptions[_id].provider, amount);
         
         if (subscriptions[_id].amount == 0) {
             subscriptions[_id].canceled = true;
         }
+        
+        subscriptions[_id].amount = subscriptions[_id].amount - amount;
+        subscriptions[_id].last_payment_at = now;
         
         emit SubscriptionPayed(
             _id,
@@ -381,6 +383,7 @@ contract Subscriptions {
         uint256 last_payment_at = subscriptions[_id].last_payment_at;
         uint256 max_subscription_time = subscriptions[_id].max_subscription_time;
         uint256 subscription_time = subscriptions[_id].subscription_time;
+        uint256 remaning = subscriptions[_id].amount;
         
         uint256 max_date = subscription_time + max_subscription_time * time_unit;
         uint256 effective_date = _date;
@@ -389,7 +392,11 @@ contract Subscriptions {
         }
         uint256 periods =  (effective_date - last_payment_at) / time_unit;
         
-        return periods * tokens_per_time_unit;
+        uint256 amount = periods * tokens_per_time_unit;
+        if (amount > remaning) {
+            amount = remaning;
+        }
+        return amount;
     }
     
     function getClientSubscriptionCount(

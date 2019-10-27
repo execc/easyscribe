@@ -46,7 +46,7 @@ async function poll(address) {
         .getProviderSubscriptionCount(address)
         .call({from: KVN_PROV_ADDR});
 
-    console.log(`= Found ${count} active subscriptions`);
+    console.log(`= Found ${count} subscriptions for ${address}`);
 
     for (i = 0; i < count; i++) {
         const providerSubscription = await instance.methods
