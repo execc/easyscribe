@@ -14,4 +14,5 @@ export type Subscription = {
   status: SubscriptionStatus;
   isSelling?: boolean;
   restAmount: number;
+  sellingPrice?: number;
 };

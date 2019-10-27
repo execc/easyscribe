@@ -143,6 +143,10 @@ export class Market extends Component<Props, State> {
       dataIndex: "restAmount",
     },
     {
+      title: "Selling price",
+      dataIndex: "sellingPrice",
+    },
+    {
       title: "Actions",
       render: this.renderActions,
     },
