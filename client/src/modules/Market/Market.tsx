@@ -1,6 +1,7 @@
 import { Button, message, Table, Tabs, Tag } from "antd";
 import React, { Component } from "react";
 import { Content } from "../../core/layout/Content";
+import {Amount} from "../../core/subscriptions/components/Amount/Amount";
 import {
   MarketSubscriptionsTab,
   SubscriptionStatus,
@@ -127,7 +128,7 @@ export class Market extends Component<Props, State> {
     },
     {
       title: "Amount",
-      render: (record: Subscription) => `${record.amount} ${record.tokenName}`,
+      render: (record: Subscription) => <Amount subscription={record}/>,
     },
     {
       title: "Period",

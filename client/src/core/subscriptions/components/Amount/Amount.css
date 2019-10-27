@@ -1,0 +1,8 @@
+.amount {
+  display: flex;
+  align-items: center;
+}
+
+.amount .token-image {
+  height: 16px;
+}

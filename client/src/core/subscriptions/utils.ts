@@ -32,6 +32,7 @@ export const getMappedSubscriptions = (
       id: subscription[0],
       token: subscription[2],
       tokenName: tokenOption ? tokenOption.title : undefined,
+      tokenImage: tokenOption ? tokenOption.icon : undefined,
       receiverAddress,
       serviceName: getServiceNames(receiverAddress),
       period: subscription[4] / 60,
@@ -41,8 +42,12 @@ export const getMappedSubscriptions = (
         ? SubscriptionStatus.INACTIVE
         : SubscriptionStatus.ACTIVE,
       periodCount: subscription[9],
-      restAmount: restAmount ? Number((restAmount / Math.pow(10, 18)).toFixed(2)) : 0,
-      sellingPrice: sellingPrice ? Number((sellingPrice / Math.pow(10, 18)).toFixed(2)) : undefined
+      restAmount: restAmount
+        ? Number((restAmount / Math.pow(10, 18)).toFixed(2))
+        : 0,
+      sellingPrice: sellingPrice
+        ? Number((sellingPrice / Math.pow(10, 18)).toFixed(2))
+        : undefined,
     };
   });
 };

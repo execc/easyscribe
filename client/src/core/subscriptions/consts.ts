@@ -22,10 +22,11 @@ export enum MarketSubscriptionsTab {
   MY_LOTS = "My lots",
 }
 
-export const paymentMethodOptions: OptionProps[] = [
+export const paymentMethodOptions: any[] = [
   {
     value: "0xc4375b7de8af5a38a93548eb8453a498222c4ff2",
     title: "DAI",
+    icon: "/images/dai.jpg",
   },
 ];
 
