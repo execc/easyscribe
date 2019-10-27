@@ -19,7 +19,6 @@ export const getMappedSubscriptions = (
         subscription[2].toLocaleLowerCase()
     );
     const receiverAddress = subscription[3].toLocaleLowerCase();
-    console.log(receiverAddress, getServiceNames(receiverAddress));
 
     return {
       key: subscription[0],
