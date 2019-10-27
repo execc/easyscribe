@@ -143,11 +143,12 @@ export class ProviderSubscribers extends Component<Props, State> {
     },
     {
       title: "Amount",
-      dataIndex: "amount",
+      render: (record: Subscription) => `${record.amount} ${record.tokenName}`,
     },
     {
       title: "Period",
       dataIndex: "period",
+      render: (period: string) => `${period} min`
     },
     {
       title: "Period count",

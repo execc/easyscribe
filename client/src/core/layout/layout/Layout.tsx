@@ -1,6 +1,6 @@
 import { Layout, Menu, Icon } from "antd";
 import React from "react";
-import {Link} from "react-router-dom";
+import { Link } from "react-router-dom";
 import "./Layout.css";
 
 const { Sider, Content } = Layout;
@@ -23,6 +23,11 @@ class CustomLayout extends React.Component {
         title: "Market",
         icon: "shopping-cart",
       },
+      {
+        value: "connect-form",
+        title: "Connect form",
+        icon: "credit-card",
+      },
     ];
   };
 
@@ -31,7 +36,7 @@ class CustomLayout extends React.Component {
       <Sider width={200} style={{ background: "#fff" }}>
         <Menu
           mode="inline"
-          defaultSelectedKeys={[location.hash.substr(2)]}
+          defaultSelectedKeys={[window.location.hash.substr(2)]}
           style={{ height: "100%", borderRight: 0 }}
         >
           {this.getMenuConfig().map(menuItem => (

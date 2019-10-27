@@ -1,19 +1,19 @@
 import { Button, Form, Input, InputNumber, message, Select } from "antd";
 import { FormComponentProps } from "antd/es/form";
-import { OptionProps } from "antd/es/select";
 import React from "react";
 import { Content } from "../../core/layout/Content";
+import {paymentMethodOptions} from "../../core/subscriptions/consts";
 import { ConnectForm, ConnectFormConfig } from "../ConnectForm/ConnectForm";
 import ClipboardJS from "clipboard";
 
 import "./SubscriptionForm.css";
 
 const STYLES_SNIPPET =
-  '<link href="/static/css/2.aa7fcd32.chunk.css" rel="stylesheet" /><link href="/static/css/main.bb66403a.chunk.css" rel="stylesheet" />';
+  '<link href="/static/css/2.chunk.css" rel="stylesheet" /><link href="/static/css/main.chunk.css" rel="stylesheet" />';
 const SCRIPTS_SNIPPET =
-  '<script src="/static/js/2.b8bd4959.chunk.js"></script><script src="/static/js/main.adc8c6f7.chunk.js"></script>';
-const INIT_SNIPPET =
-  '<button onclick=\'window.easyscribe.open({amount:"10000000000000000",period:"60",periodCount:"2",paymentMethods:[{value:"0xc4375b7de8af5a38a93548eb8453a498222c4ff2",title:"DIA"}],accountTo:"0x8D933D915Ae4f74D1b5BA32466c5676F2E15E5A1"})\'>Take my money</button>';
+  '<script src="/static/js/runtime-main.js"></script><script src="/static/js/2.chunk.js"></script><script src="/static/js/main.chunk.js"></script>';
+const INIT_SNIPPET = (config: ConnectFormConfig) =>
+  `<button onclick='window.easyscribe.open(${JSON.stringify(config)})'>Take my money</button><div id='easyscribe-root'></div>`;
 
 type OwnProps = {
   account: any;
@@ -25,13 +25,6 @@ type State = {
 };
 
 type Props = OwnProps & FormComponentProps;
-
-const paymentMethodOptions: OptionProps[] = [
-  {
-    value: "0xc4375b7de8af5a38a93548eb8453a498222c4ff2",
-    title: "DIA",
-  },
-];
 
 class SubscriptionForm extends React.Component<Props, State> {
   state: State = {
@@ -105,6 +98,7 @@ class SubscriptionForm extends React.Component<Props, State> {
   renderPaymentMethod = () => {
     const {
       form: { getFieldDecorator },
+        account
     } = this.props;
 
     return (
@@ -119,7 +113,7 @@ class SubscriptionForm extends React.Component<Props, State> {
           )}
         </Form.Item>
         <Form.Item label="Account">
-          {getFieldDecorator("accountTo")(<Input />)}
+          {getFieldDecorator("accountTo", {initialValue: account})(<Input disabled />)}
         </Form.Item>
       </>
     );
@@ -180,7 +174,7 @@ class SubscriptionForm extends React.Component<Props, State> {
     return (
       <Button
         className="btn"
-        data-clipboard-text={INIT_SNIPPET}
+        data-clipboard-text={INIT_SNIPPET(this.getFormConfig())}
         onClick={this.renderSuccessCopyMessage}
       >
         Copy init script
