@@ -1,5 +1,6 @@
 import Web3 from "web3";
 import { AbiItem } from "web3-utils";
+import IERC20Contract from "../../contracts/IERC20.json";
 import SubscriptionsContract from "../../contracts/Subscriptions.json";
 import { SubscriptionStatus } from "./consts";
 import { Subscription } from "./models";
@@ -100,4 +101,46 @@ export const concatWithSelling = (
         : subscriptions;
     }
   );
+};
+
+export const approve = async (
+  web3: Web3,
+  account: string,
+  tokenAddress: string,
+  amount: string
+): Promise<void> => {
+  const networkId = await web3.eth.net.getId();
+  if (networkId !== 42) {
+    throw new Error(`networkId: ${networkId}`);
+  }
+
+  const deployedNetwork = (SubscriptionsContract.networks as any)[networkId];
+
+  const IERC20ContractInstance = new web3.eth.Contract(
+    IERC20Contract.abi as AbiItem[],
+    tokenAddress
+  );
+
+  await IERC20ContractInstance.methods
+    .approve(deployedNetwork.address, amount)
+    .send({ from: account });
+};
+
+export const buySubscription = async (
+  web3: Web3,
+  account: string,
+  subscriptionId: string
+) => {
+  const networkId = await web3.eth.net.getId();
+  if (networkId !== 42) {
+    throw new Error(`networkId: ${networkId}`);
+  }
+
+  const deployedNetwork = (SubscriptionsContract.networks as any)[networkId];
+  const contract = new web3.eth.Contract(
+    SubscriptionsContract.abi as AbiItem[],
+    deployedNetwork && deployedNetwork.address
+  );
+
+  await contract.methods.buy(subscriptionId).send({ from: account });
 };

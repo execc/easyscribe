@@ -1,6 +1,7 @@
 import { message, Spin } from "antd";
 import React, { Component } from "react";
 import { Route, Router, Switch } from "react-router";
+import { Market } from "./modules/Market/Market";
 import { ProviderSubscribers } from "./modules/ProviderSubscribers/ProviderSubscribers";
 import { SubscriptionForm } from "./modules/SubscriptionForm/SubscriptionForm";
 import { Subscriptions } from "./modules/Subscriptions/Subscriptions";
@@ -70,6 +71,10 @@ class App extends Component<{}, State> {
             component={() => (
               <ProviderSubscribers account={account} web3={this.web3} />
             )}
+          />
+          <Route
+            path="/market"
+            component={() => <Market account={account} web3={this.web3} />}
           />
           <Route
             path="/connect-form"
