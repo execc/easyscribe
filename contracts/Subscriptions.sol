@@ -30,6 +30,9 @@ contract Subscriptions {
         /// when we started our subscription
         uint256 subscription_time;
         
+        /// total amount in subscription
+        uint256 amount;
+        
         /// if the subscription has been cancelled
         bool canceled;
     }
@@ -176,7 +179,7 @@ contract Subscriptions {
             amount,
             subscription.max_subscription_time,
             selling_price[id],
-            subscription.subscription_time
+            subscription.amount
         );
     }
 
@@ -282,6 +285,7 @@ contract Subscriptions {
             now,
             _max_subscription_time,
             now,
+            amount,
             false
         );
         
@@ -309,8 +313,13 @@ contract Subscriptions {
         require(subscriptions[_id].client == msg.sender);
         require(subscriptions[_id].canceled == false);
         
+        executeSubscription(_id);
+        
         subscriptions[_id].canceled = true;
         
+        IERC20 token = IERC20(subscriptions[_id].token);
+        token.transfer(subscriptions[_id].client, subscriptions[_id].amount);
+
         emit SubsctiptionCanceled(
             _id,
             msg.sender,
@@ -332,6 +341,7 @@ contract Subscriptions {
         subscriptions[_id].last_payment_at = now;
         
         IERC20 token = IERC20(subscriptions[_id].token);
+        subscriptions[_id].amount = subscriptions[_id].amount - amount;
         token.transfer(subscriptions[_id].provider, amount);
         
         emit SubscriptionPayed(
@@ -418,7 +428,7 @@ contract Subscriptions {
             subscription.canceled,
             amount,
             subscription.max_subscription_time,
-            subscription.subscription_time
+            subscription.amount
         );
     }
     
@@ -462,7 +472,7 @@ contract Subscriptions {
             subscription.canceled,
             amount,
             subscription.max_subscription_time,
-            subscription.subscription_time
+            subscription.amount
         );
     }
 }
