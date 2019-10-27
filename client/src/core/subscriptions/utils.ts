@@ -20,6 +20,7 @@ export const getMappedSubscriptions = (
       ? SubscriptionStatus.INACTIVE
       : SubscriptionStatus.ACTIVE,
     periodCount: subscription[9],
+    restAmount: subscription[10] / Math.pow(10, 18),
   }));
 };
 

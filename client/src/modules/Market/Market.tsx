@@ -1,18 +1,19 @@
-import { message, Table, Tabs, Button, Tag } from "antd";
+import { Button, message, Table, Tabs, Tag } from "antd";
 import React, { Component } from "react";
 import { Content } from "../../core/layout/Content";
-
-import "./Market.css";
 import {
-  SubscriptionsTab,
+  MarketSubscriptionsTab,
   SubscriptionStatus,
 } from "../../core/subscriptions/consts";
 import { Subscription } from "../../core/subscriptions/models";
 import {
+  approve,
   buySubscription,
   getSellingSubscriptions,
-  approve,
+  withdrawSubscription,
 } from "../../core/subscriptions/utils";
+
+import "./Market.css";
 
 const { TabPane } = Tabs;
 
@@ -26,7 +27,7 @@ type Props = {
 
 type State = {
   contract: any;
-  tab: SubscriptionsTab;
+  tab: MarketSubscriptionsTab;
   subscriptions: any[];
   subscriptionsLoading: boolean;
   waitingSubscriptionIds: string[];
@@ -38,7 +39,7 @@ export class Market extends Component<Props, State> {
 
   state: State = {
     contract: null,
-    tab: SubscriptionsTab.ACTIVE,
+    tab: MarketSubscriptionsTab.ACTIVE,
     subscriptions: [],
     subscriptionsLoading: false,
     waitingSubscriptionIds: [],
@@ -137,8 +138,8 @@ export class Market extends Component<Props, State> {
       dataIndex: "periodCount",
     },
     {
-      title: "Total sum",
-      render: (record: any) => record.amount * record.periodCount,
+      title: "Rest amount",
+      dataIndex: "restAmount",
     },
     {
       title: "Actions",
@@ -148,11 +149,19 @@ export class Market extends Component<Props, State> {
 
   getTableData = () => {
     const { subscriptions, tab } = this.state;
+    const { account } = this.props;
 
-    return subscriptions.filter(({ status }: any) => {
-      return tab === SubscriptionsTab.ACTIVE
-        ? status === SubscriptionStatus.ACTIVE
-        : status !== SubscriptionStatus.ACTIVE;
+    return subscriptions.filter(({ status, receiverAddress }: Subscription) => {
+      const isMyLot = account === receiverAddress;
+
+      switch (tab) {
+        case MarketSubscriptionsTab.ACTIVE:
+          return status === SubscriptionStatus.ACTIVE && !isMyLot;
+        case MarketSubscriptionsTab.INACTIVE:
+          return status === SubscriptionStatus.INACTIVE && !isMyLot;
+        case MarketSubscriptionsTab.MY_LOTS:
+          return isMyLot;
+      }
     });
   };
 
@@ -169,7 +178,7 @@ export class Market extends Component<Props, State> {
     );
   };
 
-  handleOnTabChange = (tab: SubscriptionsTab) => {
+  handleOnTabChange = (tab: MarketSubscriptionsTab) => {
     this.setState({
       tab,
     });
@@ -200,6 +209,20 @@ export class Market extends Component<Props, State> {
     }
   };
 
+  handleWithdrawFactory = (id: string) => async () => {
+    try {
+      this.addWaitingId(id);
+
+      const { web3, account } = this.props;
+
+      await withdrawSubscription(web3, account, id);
+    } catch (error) {
+      this.clearWaitingIntervals([id]);
+      message.error("Sell ends with error");
+      console.error(error);
+    }
+  };
+
   renderStatus = (status: SubscriptionStatus) => {
     switch (status) {
       case SubscriptionStatus.ACTIVE:
@@ -211,13 +234,15 @@ export class Market extends Component<Props, State> {
     }
   };
 
-  renderActions = (record: any) => {
-    const { id, status } = record;
+  renderActions = (record: Subscription) => {
+    const { id, status, receiverAddress } = record;
     const { waitingSubscriptionIds } = this.state;
+    const { account } = this.props;
 
     const waiting = waitingSubscriptionIds.includes(id);
+    const isMyLot = account === receiverAddress;
 
-    if (status === SubscriptionStatus.ACTIVE) {
+    if (status === SubscriptionStatus.ACTIVE && !isMyLot) {
       return (
         <Button
           type="ghost"
@@ -230,6 +255,19 @@ export class Market extends Component<Props, State> {
       );
     }
 
+    if (isMyLot) {
+      return (
+        <Button
+          type="ghost"
+          disabled={waiting}
+          loading={waiting}
+          onClick={this.handleWithdrawFactory(record.id)}
+        >
+          Withdraw
+        </Button>
+      );
+    }
+
     return null;
   };
 
@@ -238,10 +276,17 @@ export class Market extends Component<Props, State> {
 
     return (
       <Tabs activeKey={tab} onChange={this.handleOnTabChange as any}>
-        <TabPane tab={SubscriptionsTab.ACTIVE} key={SubscriptionsTab.ACTIVE} />
         <TabPane
-          tab={SubscriptionsTab.INACTIVE}
-          key={SubscriptionsTab.INACTIVE}
+          tab={MarketSubscriptionsTab.ACTIVE}
+          key={MarketSubscriptionsTab.ACTIVE}
+        />
+        <TabPane
+          tab={MarketSubscriptionsTab.INACTIVE}
+          key={MarketSubscriptionsTab.INACTIVE}
+        />
+        <TabPane
+          tab={MarketSubscriptionsTab.MY_LOTS}
+          key={MarketSubscriptionsTab.MY_LOTS}
         />
       </Tabs>
     );

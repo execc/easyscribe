@@ -154,8 +154,8 @@ export class ProviderSubscribers extends Component<Props, State> {
       dataIndex: "periodCount",
     },
     {
-      title: "Total sum",
-      render: (record: any) => record.amount * record.periodCount,
+      title: "Rest amount",
+      dataIndex: "restAmount",
     },
     {
       title: "Actions",
