@@ -36,7 +36,7 @@ export const getMappedSubscriptions = (
       serviceName: getServiceNames(receiverAddress),
       period: subscription[4] / 60,
       amount: subscription[5] / Math.pow(10, 18),
-      lastPayment: new Date(Number(subscription[6])),
+      lastPayment: new Date(Number(subscription[6]) * 1000),
       status: subscription[7]
         ? SubscriptionStatus.INACTIVE
         : SubscriptionStatus.ACTIVE,
