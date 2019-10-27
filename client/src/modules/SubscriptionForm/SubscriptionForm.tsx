@@ -105,6 +105,7 @@ class SubscriptionForm extends React.Component<Props, State> {
   renderPaymentMethod = () => {
     const {
       form: { getFieldDecorator },
+        account
     } = this.props;
 
     return (
@@ -119,7 +120,7 @@ class SubscriptionForm extends React.Component<Props, State> {
           )}
         </Form.Item>
         <Form.Item label="Account">
-          {getFieldDecorator("accountTo")(<Input />)}
+          {getFieldDecorator("accountTo", {initialValue: account})(<Input disabled />)}
         </Form.Item>
       </>
     );
