@@ -11,6 +11,7 @@ import {
   concatWithSelling,
   getProviderSubscriptions,
   getSellingSubscriptions,
+  withdrawSubscription,
 } from "../../core/subscriptions/utils";
 
 import "./ProviderSubscribers.css";
@@ -92,21 +93,34 @@ export class ProviderSubscribers extends Component<Props, State> {
         sellingSubscriptions
       );
 
+      const { waitingSubscribersIds } = this.state;
+      const newWaitingSubscribersIds = waitingSubscribersIds.filter(
+        (id: string) => {
+          const newSub = newSubscriptions.find(
+            (subscription: Subscription) => subscription.id === id
+          );
+          const oldSub = this.state.subscriptions.find(
+            subscription => subscription.id === id
+          );
+
+          return (
+            newSub &&
+            oldSub &&
+            newSub.status === oldSub.status &&
+            newSub.isSelling === oldSub.isSelling
+          );
+        }
+      );
+
+      const updatedIds = waitingSubscribersIds.filter(
+        (id: string) => !newWaitingSubscribersIds.includes(id)
+      );
+      this.clearWaitingIntervals(updatedIds);
+
       this.setState({
         subscriptions: newSubscriptions,
         subscribersLoading: withLoading ? false : this.state.subscribersLoading,
-        waitingSubscribersIds: this.state.waitingSubscribersIds.filter(
-          (id: string) => {
-            const newSub = newSubscriptions.find(
-              (subscription: Subscription) => subscription.id === id
-            );
-            const oldSub = this.state.subscriptions.find(
-              subscription => subscription.id === id
-            );
-
-            return newSub && oldSub && newSub.status === oldSub.status;
-          }
-        ),
+        waitingSubscribersIds: newWaitingSubscribersIds,
       });
     } catch (error) {
       this.setState({
@@ -206,6 +220,21 @@ export class ProviderSubscribers extends Component<Props, State> {
         .sell(id, (0.01 * Math.pow(10, 18)).toString())
         .send({ from: this.props.account });
     } catch (error) {
+      this.clearWaitingIntervals([id]);
+      message.error("Sell ends with error");
+      console.error(error);
+    }
+  };
+
+  handleWithdrawFactory = (id: string) => async () => {
+    try {
+      this.addWaitingId(id);
+
+      const { web3, account } = this.props;
+
+      await withdrawSubscription(web3, account, id);
+    } catch (error) {
+      this.clearWaitingIntervals([id]);
       message.error("Sell ends with error");
       console.error(error);
     }
@@ -237,6 +266,19 @@ export class ProviderSubscribers extends Component<Props, State> {
           onClick={this.handleSellFactory(record.id)}
         >
           Sell
+        </Button>
+      );
+    }
+
+    if (isSelling) {
+      return (
+        <Button
+          type="ghost"
+          disabled={waiting}
+          loading={waiting}
+          onClick={this.handleWithdrawFactory(record.id)}
+        >
+          Withdraw
         </Button>
       );
     }

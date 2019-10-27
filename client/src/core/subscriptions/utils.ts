@@ -71,7 +71,6 @@ export const getSellingSubscriptions = async (
   );
 
   const count = await contract.methods.sellingCount().call({ from: account });
-
   const getSubscriptionRequests = [];
   for (let i = 0; i < count; i++) {
     getSubscriptionRequests.push(
@@ -143,4 +142,23 @@ export const buySubscription = async (
   );
 
   await contract.methods.buy(subscriptionId).send({ from: account });
+};
+
+export const withdrawSubscription = async (
+  web3: Web3,
+  account: string,
+  subscriptionId: string
+) => {
+  const networkId = await web3.eth.net.getId();
+  if (networkId !== 42) {
+    throw new Error(`networkId: ${networkId}`);
+  }
+
+  const deployedNetwork = (SubscriptionsContract.networks as any)[networkId];
+  const contract = new web3.eth.Contract(
+    SubscriptionsContract.abi as AbiItem[],
+    deployedNetwork && deployedNetwork.address
+  );
+
+  await contract.methods.withdraw(subscriptionId).send({ from: account });
 };
